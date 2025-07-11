@@ -17,6 +17,31 @@ class _LoginPageState extends State<LoginPage> {
 
   String message = '';
 
+  // void login() async {
+  //   final response = await ApiService.login(
+  //     emailController.text,
+  //     passwordController.text,
+  //   );
+  //
+  //   if (response.statusCode == 200) {
+  //     final data = jsonDecode(response.body);
+  //     final token = data['token'];
+  //
+  //     setState(() {
+  //       message = '로그인 성공! 토큰: $token';
+  //     });
+  //
+  //     // 로그인 성공 시 홈 화면으로 이동
+  //     Navigator.pushReplacement(
+  //       context,
+  //       MaterialPageRoute(builder: (context) => const HomePage()),
+  //     );
+  //   } else {
+  //     setState(() {
+  //       message = jsonDecode(response.body)['message'];
+  //     });
+  //   }
+  // }
   void login() async {
     final response = await ApiService.login(
       emailController.text,
@@ -31,10 +56,10 @@ class _LoginPageState extends State<LoginPage> {
         message = '로그인 성공! 토큰: $token';
       });
 
-      // 로그인 성공 시 홈 화면으로 이동
+      // 로그인 성공 시 HomePage로 토큰을 넘겨서 이동
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const HomePage()),
+        MaterialPageRoute(builder: (context) => HomePage(token: token)), // HomePage로 token 전달
       );
     } else {
       setState(() {

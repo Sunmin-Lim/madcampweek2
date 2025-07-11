@@ -8,7 +8,8 @@ plugins {
 android {
     namespace = "com.example.madcampweek2"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+//    ndkVersion = flutter.ndkVersion
+    ndkVersion = "27.0.12077973"  // NDK 버전 설정 추가
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
