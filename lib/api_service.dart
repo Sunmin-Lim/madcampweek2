@@ -5,8 +5,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
   // 서버 주소 설정 (실제 IP 주소 사용)
-  // static const String baseUrl = 'http://143.248.183.61:3000/api/auth'; // 실제 서버의 IP로 설정
-  static const String baseUrl = 'http://10.0.2.2:3000/api/auth'; // 실제 서버의 IP로 설정
+  static const String baseUrl = 'http://143.248.183.61:3000/api/auth'; // 실제 서버의 IP로 설정
+  // static const String baseUrl = 'http://10.0.2.2:3000/api/auth'; // 실제 서버의 IP로 설정
 
 
   // 회원가입 함수
@@ -75,7 +75,9 @@ class ApiService {
   // }
   // Git 리포지토리 클론 함수 (토큰을 Authorization 헤더에 포함)
   static Future<http.Response> cloneRepo(String repoUrl, String token) async {
-    final url = Uri.parse('http://10.0.2.2:3000/api/gitController/clone-repo');
+    // final url = Uri.parse('http://10.0.2.2:3000/api/gitController/clone-repo');
+    final url = Uri.parse('http://143.248.183.61:3000/api/gitController/clone-repo');
+
 
     // 헤더에 Authorization 토큰 포함
     final headers = {
