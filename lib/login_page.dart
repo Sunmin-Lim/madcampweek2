@@ -57,9 +57,15 @@ class _LoginPageState extends State<LoginPage> {
       });
 
       // 로그인 성공 시 HomePage로 토큰을 넘겨서 이동
-      Navigator.pushReplacement(
+      // Navigator.pushReplacement(
+      //   context,
+      //   MaterialPageRoute(builder: (context) => HomePage(token: token)), // HomePage로 token 전달
+      // );
+      Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => HomePage(token: token)), // HomePage로 token 전달
+        MaterialPageRoute(
+          builder: (context) => HomePage(token: token),
+        ), // const 제거
       );
     } else {
       setState(() {
