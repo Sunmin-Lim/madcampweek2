@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:ffi';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io';
@@ -127,17 +128,53 @@ class ApiService {
     }
   }
 
+  // static Future<http.Response> dockerBuild(
+  //   String repoUrl,
+  //   String token,
+  //   String userId, // user_id 추가
+  //   String localPath,
+  //   String imageName,
+  //   String cpu,
+  //   String memory,
+  // ) async {
+  //   final url = Uri.parse(
+  //     'http://143.248.183.61:3000/api/session/build',
+  //   ); // 실제 API URL
+
+  //   final headers = {
+  //     'Content-Type': 'application/json',
+  //     'Authorization': 'Bearer $token', // Bearer 형식으로 토큰 추가
+  //   };
+
+  //   final body = jsonEncode({
+  //     'user_id': userId, // user_id를 본문에 포함
+  //     'localPath': localPath, // localPath 포함
+  //     'imageName': imageName, // imageName 포함
+  //     'resources': {
+  //       // CPU 및 메모리 리소스 포함
+  //       'cpu': cpu,
+  //       'memory': memory,
+  //     },
+  //     'repoUrl': repoUrl, // repoUrl 포함
+  //   });
+
+  //   try {
+  //     final response = await http.post(url, headers: headers, body: body);
+  //     return response;
+  //   } catch (e) {
+  //     print('Docker 빌드 요청 중 오류 발생: $e');
+  //     return Future.error('빌드 요청 실패: $e');
+  //   }
+  // }
+
   static Future<http.Response> dockerBuild(
-    String repoUrl,
     String token,
     String userId, // user_id 추가
     String localPath,
     String imageName,
-    String cpu,
-    String memory,
   ) async {
     final url = Uri.parse(
-      'http://143.248.183.61:3000/api/session/build-run',
+      'http://143.248.183.61:3000/api/session/build',
     ); // 실제 API URL
 
     final headers = {
@@ -149,12 +186,6 @@ class ApiService {
       'user_id': userId, // user_id를 본문에 포함
       'localPath': localPath, // localPath 포함
       'imageName': imageName, // imageName 포함
-      'resources': {
-        // CPU 및 메모리 리소스 포함
-        'cpu': cpu,
-        'memory': memory,
-      },
-      'repoUrl': repoUrl, // repoUrl 포함
     });
 
     try {
@@ -166,55 +197,147 @@ class ApiService {
     }
   }
 
-  static Future<http.Response> createAndRunContainer(
-    String userId,
-    String localPath,
-    String imageName,
-    String cpu,
-    String memory,
-    String token,
-  ) async {
-    final url = Uri.parse('http://143.248.183.61:3000/api/session/build-run');
-
-    final body = jsonEncode({
-      'user_id': userId,
-      'localPath': localPath,
-      'imageName': imageName,
-      'resources': {'cpu': cpu, 'memory': memory},
-    });
-
-    final headers = {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer $token',
-    };
-
-    try {
-      final response = await http.post(url, headers: headers, body: body);
-      return response;
-    } catch (e) {
-      print('Error creating container: $e');
-      return Future.error('Error creating container: $e');
-    }
-  }
-
-  static Future<http.Response> getSessions(String userId, String token) async {
+  static Future<http.Response> getSession(String token, String userId) async {
     final url = Uri.parse(
-      'http://143.248.183.61:3000/api/session?user_id=$userId',
+      'http://143.248.183.61:3000/api/session/get?user_id=$userId', // 쿼리 파라미터로 user_id 전달
     );
 
     final headers = {
       'Content-Type': 'application/json',
-      'Authorization': 'Bearer $token',
+      'Authorization': 'Bearer $token', // Bearer 형식으로 토큰 추가
     };
 
     try {
-      final response = await http.get(url, headers: headers);
+      final response = await http.get(url, headers: headers); // GET 방식으로 요청
       return response;
     } catch (e) {
-      print('Error fetching sessions: $e');
-      return Future.error('Error fetching sessions: $e');
+      print('Error retrieving session: $e');
+      return Future.error('Error retrieving session: $e');
     }
   }
+
+  // static Future<http.Response> updateSessionState(
+  //   String sessionId,
+  //   String sessionStatus,
+  //   String token,
+  // ) async {
+  //   final url = Uri.parse(
+  //     'http://143.248.183.61:3000/api/session/update',
+  //   ); // 실제 API URL
+
+  //   final headers = {
+  //     'Content-Type': 'application/json',
+  //     'Authorization': 'Bearer $token', // Bearer 형식으로 토큰 추가
+  //   };
+
+  //   final body = jsonEncode({
+  //     'session_id': sessionId, // user_id를 본문에 포함
+  //     'newstatus': sessionStatus,
+  //   });
+
+  //   try {
+  //     final response = await http.post(url, headers: headers, body: body);
+  //     return response;
+  //   } catch (e) {
+  //     print('API/session/update | updateSessionState | SUCCESS : $e');
+  //     return Future.error(
+  //       'API/session/update | updateSessionState | FAIL : $e',
+  //     );
+  //   }
+  // }
+
+  // static Future<http.Response> dockerRun(
+  //   String token,
+  //   String sessionId,
+  //   String cpu,
+  //   String memory,
+  //   String port,
+  // ) async {
+  //   final url = Uri.parse(
+  //     'http://143.248.183.61:3000/api/domain/run',
+  //   ); // 실제 API URL
+
+  //   final headers = {
+  //     'Content-Type': 'application/json',
+  //     'Authorization': 'Bearer $token', // Bearer 형식으로 토큰 추가
+  //   };
+
+  //   final body = jsonEncode({
+  //     'session_id': sessionId,
+  //     'cpu': cpu,
+  //     'memory': memory,
+  //     'port': port,
+  //   });
+
+  //   try {
+  //     final response = await http.post(url, headers: headers, body: body);
+  //     return response;
+  //   } catch (e) {
+  //     print('API/domain/run | dockerRun | SUCCESS : $e');
+  //     return Future.error('API/domain/run | dockerRun | FAIL : $e');
+  //   }
+  // }
+
+  static Future<http.Response> dockerRun(
+    String token,
+    String sessionId,
+    String cpu,
+    String memory,
+    String port,
+  ) async {
+    final url = Uri.parse(
+      'http://143.248.183.61:3000/api/domain/run',
+    ); // 실제 API URL
+
+    final headers = {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $token', // Bearer 형식으로 토큰 추가
+    };
+
+    final body = jsonEncode({
+      'session_id': sessionId,
+      'cpu': cpu,
+      'memory': memory,
+      'port': port,
+    });
+
+    try {
+      final response = await http.post(url, headers: headers, body: body);
+
+      // 응답 상태 코드와 본문 출력
+      print('Docker Run Response Status Code: ${response.statusCode}');
+      print('Docker Run Response Body: ${response.body}');
+
+      // 응답 상태 코드 확인
+      if (response.statusCode == 200) {
+        return response;
+      } else {
+        return Future.error('Docker container 실행 실패: ${response.body}');
+      }
+    } catch (e) {
+      print('API/domain/run | dockerRun | FAIL: $e');
+      return Future.error('API/domain/run | dockerRun | FAIL: $e');
+    }
+  }
+
+  // static Future<http.Response> getSessions(String userId, String token) async {
+  //   final url = Uri.parse(
+  //     'http://143.248.183.61:3000/api/session?user_id=$userId',
+  //   );
+
+  //   final headers = {
+  //     'Content-Type': 'application/json',
+  //     'Authorization': 'Bearer $token',
+  //   };
+
+  //   try {
+  //     final response = await http.get(url, headers: headers);
+  //     return response;
+  //   } catch (e) {
+  //     print('Error fetching sessions: $e');
+  //     return Future.error('Error fetching sessions: $e');
+  //   }
+  // }
 
   static Future<http.Response> getContainerStatus(
     String containerId,
@@ -239,9 +362,9 @@ class ApiService {
   }
 
   static Future<http.Response> stopContainer(
+    String token,
     String containerId,
     String sessionId,
-    String token,
   ) async {
     final url = Uri.parse('http://143.248.183.61:3000/api/session/stop');
 

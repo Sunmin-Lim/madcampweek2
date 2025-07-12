@@ -21,11 +21,10 @@ class _SessionPageState extends State<SessionPage> {
   late String localPath;
   String basePath =
       '/home/hanjeongjin/Workspace_ubuntu/backend/madcampweek2-backend/F:/workspace/server_manage/home';
-  // String localPath =
-  //     '/home/hanjeongjin/Workspace_ubuntu/backend/madcampweek2-backend/cloned-repo-test'; // 임의로 설정한 localPath
   String imageName = 'custom-image-name'; // 임의로 설정한 imageName
   String cpu = '0.5'; // 임의로 설정한 CPU 리소스
   String memory = '200MB'; // 임의로 설정한 메모리 리소스
+  String port = '8080:80';
 
   bool isLoading = true; // userId를 가져오는 동안 로딩 상태 관리
 
@@ -84,13 +83,10 @@ class _SessionPageState extends State<SessionPage> {
 
     try {
       final response = await ApiService.dockerBuild(
-        widget.repoUrl, // 전달받은 repoUrl 사용
         widget.token,
         userId, // 동적으로 설정된 userId 사용
         localPath, // 임의로 설정된 localPath 사용
         imageName, // 임의로 설정된 imageName 사용
-        cpu, // 임의로 설정된 cpu 리소스 사용
-        memory, // 임의로 설정된 memory 리소스 사용
       ); // Docker 빌드 요청
 
       if (response.statusCode == 200) {
@@ -109,6 +105,101 @@ class _SessionPageState extends State<SessionPage> {
     }
   }
 
+  // Docker 실행 함수
+  void runDockerContainer() async {
+    if (isLoading) {
+      setState(() {
+        message = 'Loading user data...'; // 데이터 로딩 중 메시지
+      });
+      return;
+    }
+
+    // userId가 로드되었을 때만 Docker 실행을 진행하도록 함
+    if (userId.isEmpty) {
+      setState(() {
+        message = 'User ID is not available.';
+      });
+      return;
+    }
+
+    try {
+      // 1. 세션을 가져오기 위한 API 호출
+      final sessionResponse = await ApiService.getSession(widget.token, userId);
+      if (sessionResponse.statusCode == 200) {
+        final sessionData = jsonDecode(sessionResponse.body);
+
+        // sessionData가 배열이므로 첫 번째 세션 객체에서 sessionId 추출
+        final sessionId = sessionData[0]['_id']; // 배열에서 첫 번째 객체의 sessionId 추출
+
+        // 2. Docker 컨테이너 실행 요청
+        final response = await ApiService.dockerRun(
+          widget.token,
+          sessionId,
+          cpu,
+          memory,
+          port,
+        );
+
+        // 3. 실행 결과 처리
+        if (response.statusCode == 200) {
+          final responseData = jsonDecode(response.body);
+          // Docker 실행이 성공적으로 되면, response에서 반환된 포트 정보 추출
+          String mappedPort = responseData['port']; // API 응답에서 포트 번호 추출
+          String backendServerUrl = 'http://143.248.183.61'; // 여기를 실제 서버 주소로 설정
+          String fullUrl = '$backendServerUrl:$mappedPort'; // 포트 번호와 URL을 결합
+
+          setState(() {
+            message = 'Docker container 실행 성공! 백엔드 URL: $fullUrl';
+          });
+        } else {
+          setState(() {
+            message = 'Docker container 실행 실패: ${response.body}';
+          });
+        }
+      } else {
+        setState(() {
+          message = '세션 조회 실패: ${sessionResponse.body}';
+        });
+      }
+    } catch (e) {
+      setState(() {
+        message = '컨테이너 실행 중 오류 발생: $e'; // 실행 관련 에러 메시지
+      });
+    }
+  }
+
+  // Stop container 함수
+  void stopContainer() async {
+    try {
+      final sessionResponse = await ApiService.getSession(widget.token, userId);
+      if (sessionResponse.statusCode == 200) {
+        final sessionData = jsonDecode(sessionResponse.body);
+        final sessionId = sessionData[0]['_id'];
+        final containerId = sessionData[0]['container_id'];
+
+        final stopResponse = await ApiService.stopContainer(
+          widget.token,
+          containerId,
+          sessionId,
+        );
+
+        if (stopResponse.statusCode == 200) {
+          setState(() {
+            message = 'Container stopped successfully!';
+          });
+        } else {
+          setState(() {
+            message = 'Failed to stop container: ${stopResponse.body}';
+          });
+        }
+      }
+    } catch (e) {
+      setState(() {
+        message = 'Error stopping container: $e';
+      });
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -118,21 +209,33 @@ class _SessionPageState extends State<SessionPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Docker 빌드')),
+      appBar: AppBar(title: const Text('Docker 빌드 및 실행')),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // userId가 로드될 때까지 Docker 빌드 버튼 비활성화
             isLoading
-                ? const CircularProgressIndicator() // 로딩 중일 때
-                : ElevatedButton(
-                    onPressed: buildDockerContainer,
-                    child: const Text('Build Docker Image'),
+                ? const CircularProgressIndicator()
+                : Column(
+                    children: [
+                      ElevatedButton(
+                        onPressed: buildDockerContainer,
+                        child: const Text('Build Docker Image'),
+                      ),
+                      const SizedBox(height: 20),
+                      ElevatedButton(
+                        onPressed: runDockerContainer,
+                        child: const Text('Run Docker Container'),
+                      ),
+                      const SizedBox(height: 20),
+                      ElevatedButton(
+                        onPressed: stopContainer,
+                        child: const Text('Stop Container'),
+                      ),
+                    ],
                   ),
             const SizedBox(height: 20),
-            // 빌드 성공/실패 메시지 표시
             Text(
               message,
               style: const TextStyle(fontSize: 16, color: Colors.black),
