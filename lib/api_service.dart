@@ -8,7 +8,8 @@ import 'package:url_launcher/url_launcher.dart';
 
 class ApiService {
   // static const String serverIp = 'http://143.248.183.61:3000';
-  static const String serverIp = 'http://192.168.73.1:3000';
+  //  static const String serverIp = 'http://192.168.73.1:3000';
+  static const String serverIp = 'http://localhost:3000';
 
   static const String authBase = '$serverIp/api/auth';
   static const String sessionBase = '$serverIp/api/session';

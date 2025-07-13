@@ -339,7 +339,6 @@ import 'package:flutter/material.dart';
 import 'api_service.dart'; // ApiService 임포트
 import 'dart:convert';
 import 'session_page.dart'; // SessionPage 임포트
-// import 'package:uni_links/uni_links.dart';
 
 class HomePage extends StatefulWidget {
   final String token;
@@ -350,11 +349,14 @@ class HomePage extends StatefulWidget {
   _HomePageState createState() => _HomePageState();
 }
 
+enum WhaleState { idle, loading, success }
+
 class _HomePageState extends State<HomePage> {
   final TextEditingController repoUrlController = TextEditingController();
   String message = '';
-  List<dynamic> clonedRepos = []; // 단순 문자열 리스트
+  List<dynamic> clonedRepos = [];
   bool isLoadingRepos = true;
+  WhaleState whaleState = WhaleState.idle;
 
   @override
   void initState() {
@@ -374,12 +376,17 @@ class _HomePageState extends State<HomePage> {
 
     print("Received Token: ${widget.token}");
 
+    setState(() {
+      whaleState = WhaleState.loading;
+    });
+
     try {
       final response = await ApiService.cloneRepo(repoUrl, widget.token);
 
       if (response.statusCode == 200) {
         setState(() {
           message = 'Git 리포지토리 클론 성공!';
+          whaleState = WhaleState.success;
         });
 
         Navigator.push(
@@ -392,11 +399,13 @@ class _HomePageState extends State<HomePage> {
       } else {
         setState(() {
           message = 'Error: ${response.body}';
+          whaleState = WhaleState.idle;
         });
       }
     } catch (e) {
       setState(() {
         message = 'Git 리포지토리 클론 중 오류가 발생했습니다. 오류: $e';
+        whaleState = WhaleState.idle;
       });
     }
   }
@@ -438,73 +447,174 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  // ✅ Whale animation widget
+  Widget whaleWidget() {
+    switch (whaleState) {
+      case WhaleState.idle:
+        return const Text('🐳', style: TextStyle(fontSize: 80));
+      case WhaleState.loading:
+        return const Text('🐋', style: TextStyle(fontSize: 80));
+      case WhaleState.success:
+        return const Text('🐳💦', style: TextStyle(fontSize: 80));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Git 리포지토리 클론')),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            TextField(
-              controller: repoUrlController,
-              decoration: const InputDecoration(
-                labelText: 'Git Repository URL',
-                border: OutlineInputBorder(),
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 24.0,
+                vertical: 16.0,
               ),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: cloneRepo,
-              child: const Text('Clone Repository'),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              message,
-              style: const TextStyle(fontSize: 16, color: Colors.black),
-            ),
-            const SizedBox(height: 24),
-            const Text(
-              '클론된 리포지토리 목록',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-            ),
-            const SizedBox(height: 8),
-            Expanded(
-              child: isLoadingRepos
-                  ? const Center(child: CircularProgressIndicator())
-                  : clonedRepos.isEmpty
-                  ? const Center(child: Text('클론된 리포지토리가 없습니다.'))
-                  : ListView.builder(
-                      itemCount: clonedRepos.length,
-                      itemBuilder: (context, index) {
-                        final url = clonedRepos[index];
-                        return Card(
-                          margin: const EdgeInsets.symmetric(
-                            vertical: 6,
-                            horizontal: 4,
-                          ),
-                          child: ListTile(
-                            title: Text(url),
-                            trailing: ElevatedButton(
-                              child: const Text('진행'),
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => SessionPage(
-                                      token: widget.token,
-                                      repoUrl: url,
-                                    ),
-                                  ),
-                                );
-                              },
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  // Back button + title row
+                  Row(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.arrow_back, color: Colors.black),
+                        onPressed: () {
+                          Navigator.pop(context);
+                        },
+                      ),
+                      Expanded(
+                        child: Center(
+                          child: Text(
+                            'clone git repository',
+                            style: const TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.normal,
+                              color: Colors.black,
                             ),
                           ),
-                        );
-                      },
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // Whale Emoji / Animation
+                  whaleWidget(),
+
+                  const SizedBox(height: 24),
+
+                  // Input for repo URL
+                  TextField(
+                    controller: repoUrlController,
+                    decoration: const InputDecoration(
+                      labelText: 'git repository url',
+                      border: OutlineInputBorder(),
                     ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Clone Button
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: cloneRepo,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.lightBlue,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        'clone repository',
+                        style: TextStyle(fontSize: 16),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Error / Success message
+                  if (message.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8.0),
+                      child: Text(
+                        message,
+                        style: const TextStyle(color: Colors.red, fontSize: 14),
+                      ),
+                    ),
+
+                  const SizedBox(height: 24),
+
+                  // Cloned Repos title
+                  const Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'cloned repositories',
+                      style: TextStyle(
+                        fontWeight: FontWeight.normal,
+                        fontSize: 18,
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  // List of Cloned Repos
+                  SizedBox(
+                    height: 300,
+                    child: isLoadingRepos
+                        ? const Center(child: CircularProgressIndicator())
+                        : clonedRepos.isEmpty
+                        ? const Center(
+                            child: Text('no repositories cloned yet.'),
+                          )
+                        : ListView.builder(
+                            itemCount: clonedRepos.length,
+                            itemBuilder: (context, index) {
+                              final url = clonedRepos[index];
+                              return Card(
+                                margin: const EdgeInsets.symmetric(
+                                  vertical: 6,
+                                  horizontal: 4,
+                                ),
+                                child: ListTile(
+                                  title: Text(url),
+                                  trailing: ElevatedButton(
+                                    child: const Text('open'),
+                                    onPressed: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => SessionPage(
+                                            token: widget.token,
+                                            repoUrl: url,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // Footer
+                  Text(
+                    'WhaleDev 2025',
+                    style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
+                  ),
+                ],
+              ),
             ),
-          ],
+          ),
         ),
       ),
     );
