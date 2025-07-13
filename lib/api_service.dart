@@ -312,8 +312,6 @@ class ApiService {
   //   }
   // }
 
-
-
   Future<void> sendCodeToBackend(String code, BuildContext context) async {
     try {
       final response = await http.post(
@@ -324,6 +322,8 @@ class ApiService {
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'code': code}),
       );
+
+      print('🔁 서버 응답: ${response}');
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);

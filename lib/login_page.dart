@@ -9,7 +9,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:app_links/app_links.dart';
 
 import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
-import 'package:flutter_appauth/flutter_appauth.dart';
+// import 'package:flutter_appauth/flutter_appauth.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -58,132 +58,6 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  // void launchGitHubLogin(String url) async {
-  //   final uri = Uri.parse(url);
-  //   if (await canLaunchUrl(uri)) {
-  //     await launchUrl(
-  //       uri,
-  //       mode: LaunchMode.externalApplication,
-  //     ); // 외부 브라우저에서 열기
-  //   } else {
-  //     throw 'GitHub 로그인 페이지를 열 수 없습니다: $url';
-  //   }
-  // }
-
-  // void loginWithGitHub() async {
-  //   try {
-  //     final result = await FlutterWebAuth2.authenticate(
-  //       url: 'http://your-server.com/api/auth/github', // 백엔드 로그인 시작 URL
-  //       callbackUrlScheme: 'myapp', // 딥링크에서 정의한 스킴
-  //     );
-
-  //     final token = Uri.parse(result).queryParameters['token'];
-  //     print('✅ 로그인 성공! 받은 토큰: $token');
-
-  //     // 토큰 저장 또는 다음 화면 이동
-  //   } catch (e) {
-  //     print('❌ 로그인 실패: $e');
-  //   }
-  // }
-
-  // void loginWithGitHub() async {
-  //   // GitHub OAuth 클라이언트 ID와 리다이렉트 URI 설정
-  //   // 🔁 리다이렉트 URI는 AndroidManifest.xml에 등록되어 있어야
-
-  //   // Ov23liBt79Q7o2NROraV
-  //   // const clientId = 'YOUR_CLIENT_ID';
-  //   const clientId = 'Ov23liBt79Q7o2NROraV'; // GitHub OAuth 클라이언트 ID
-
-  //   const redirectUri = 'myapp://callback'; // 🔁 AndroidManifest에 등록된 딥링크
-  //   final url = Uri.parse(
-  //     'https://github.com/login/oauth/authorize'
-  //     '?client_id=$clientId'
-  //     '&redirect_uri=$redirectUri'
-  //     '&scope=user:email',
-  //   );
-
-  //   if (await canLaunchUrl(url)) {
-  //     await launchUrl(url, mode: LaunchMode.externalApplication);
-  //   } else {
-  //     throw 'GitHub 로그인 페이지를 열 수 없습니다.';
-  //   }
-  // }
-
-  // void loginWithGitHub() async {
-  //   const clientId = 'Ov23liBt79Q7o2NROraV';
-  //   const redirectUri = 'myapp://callback';
-
-  //   print('🚀 [loginWithGitHub] 함수 진입');
-
-  //   final authUrl = Uri.parse(
-  //     'https://github.com/login/oauth/authorize'
-  //     '?client_id=$clientId'
-  //     '&redirect_uri=$redirectUri'
-  //     '&scope=user:email',
-  //   );
-  //   print('🔗 [GitHub OAuth] 인증 URL: $authUrl');
-
-  //   try {
-  //     // ✅ 딥링크가 myapp://callback?code=... 형식으로 오면 자동으로 여기서 기다림
-  //     print('⏳ [OAuth] FlutterWebAuth2.authenticate 시작...');
-
-  //     final result = await FlutterWebAuth2.authenticate(
-  //       url: authUrl.toString(),
-  //       callbackUrlScheme: 'myapp',
-  //     );
-
-  //     print('📦 [OAuth] redirect URI result: $result');
-
-  //     // ✅ 리디렉션된 URI에서 code 추출
-  //     final code = Uri.parse(result).queryParameters['code'];
-  //     print('📥 [OAuth] 받은 code: $code');
-
-  //     if (code != null) {
-  //       // TODO: 백엔드에 code를 전송해 JWT 토큰을 교환 (추후 구현)
-  //     } else {
-  //       print('❌ code 파라미터가 없음');
-  //     }
-  //   } catch (e) {
-  //     print('❌ GitHub OAuth 실패: $e');
-  //   }
-  // }
-
-  // void loginWithGitHub() async {
-  //   const clientId = 'Ov23liBt79Q7o2NROraV';
-  //   const redirectUri = 'myapp://callback';
-
-  //   final authUrl = Uri.parse(
-  //     'https://github.com/login/oauth/authorize'
-  //     '?client_id=$clientId'
-  //     '&redirect_uri=$redirectUri'
-  //     '&scope=user:email',
-  //   );
-
-  //   print('🔗 Launching GitHub OAuth URL: $authUrl');
-
-  //   if (await canLaunchUrl(authUrl)) {
-  //     await launchUrl(authUrl, mode: LaunchMode.externalApplication);
-  //   } else {
-  //     throw 'GitHub 로그인 페이지 열기 실패';
-  //   }
-  // }
-
-  // void _handleIncomingLinks() {
-  //   final appLinks = AppLinks();
-
-  //   appLinks.uriLinkStream.listen((uri) {
-  //     if (uri.toString().startsWith('myapp://callback')) {
-  //       final code = uri.queryParameters['code'];
-  //       print('✅ 앱에서 받은 GitHub code: $code');
-
-  //       if (code != null) {
-  //         final apiService = ApiService();
-  //         apiService.sendCodeToBackend(code, context);
-  //       }
-  //     }
-  //   });
-  // }
-
   void _handleIncomingLinks() {
     final appLinks = AppLinks();
     _linkSubscription?.cancel();
@@ -208,94 +82,22 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  /*
-http://143.248.183.61:3000/api/auth/github/callback
-*/
-  // void loginWithGitHub() async {
-  //   const clientId = 'Ov23liBt79Q7o2NROraV';
-  //   // const redirectUri = 'myapp://callback';
-  //   const redirectUri = '$authBase/github/callback';
-
-  //   final authUrl = Uri.parse(
-  //     'https://github.com/login/oauth/authorize'
-  //     '?client_id=$clientId'
-  //     '&redirect_uri=$redirectUri'
-  //     '&scope=user:email'
-  //     '&allow_signup=true'
-  //     '&prompt=consent', // 또는 'select_account'
-  //   );
-  //   print('✅ GitHub 로그인 시도 중');
-  //   // try {
-  //   //   final result = await FlutterWebAuth2.authenticate(
-  //   //     url: authUrl.toString(),
-  //   //     callbackUrlScheme: 'myapp',
-  //   //   );
-
-  //   //   final code = Uri.parse(result).queryParameters['code'];
-  //   //   if (code != null) {
-  //   //     print('✅ 앱에서 받은 GitHub code: $code');
-  //   //     final apiService = ApiService();
-  //   //     await apiService.sendCodeToBackend(code, context);
-  //   //   }
-  //   // } catch (e) {
-  //   //   print('❌ GitHub 로그인 실패: $e');
-  //   // }
-  //   print('✅ GitHub 브라우저 로그인 시도 중');
-  //   if (await canLaunchUrl(authUrl)) {
-  //     await launchUrl(
-  //       authUrl,
-  //       mode: LaunchMode.externalApplication, // ✅ 외부 브라우저 강제 실행
-  //     );
-  //   } else {
-  //     print('❌ GitHub 로그인 페이지 열기 실패');
-  //   }
-  // }
-
-  final FlutterAppAuth appAuth = FlutterAppAuth();
-
   void loginWithGitHub() async {
-    // const githubLoginUrl = 'https://github.com/login';
-    // final uri = Uri.parse(githubLoginUrl);
-
-    // if (await canLaunchUrl(uri)) {
-    //   await launchUrl(uri, mode: LaunchMode.externalApplication);
-    //   await Future.delayed(Duration(seconds: 2)); // 유저가 로그인할 시간 조금 대기
-    // } else {
-    //   print('❌ GitHub 로그인 페이지 열기 실패');
-    //   return;
-    // }
-
     const clientId = 'Ov23liBt79Q7o2NROraV';
-    const redirectUri = 'myapp://callback'; // Android/iOS 딥링크와 일치해야 함
-    const tokenEndpoint = 'https://github.com/login/oauth/access_token';
-    const authorizationEndpoint = 'https://github.com/login/oauth/authorize';
+    const redirectUri = 'myapp://callback';
+
+    final authUrl = Uri.parse(
+      'https://github.com/login/oauth/authorize'
+      '?client_id=$clientId'
+      '&redirect_uri=$redirectUri'
+      '&scope=user:email',
+    );
 
     try {
-      print('🔒 GitHub OAuth 시작');
-
-      final AuthorizationTokenResponse? result = await appAuth
-          .authorizeAndExchangeCode(
-            AuthorizationTokenRequest(
-              clientId,
-              redirectUri,
-              serviceConfiguration: AuthorizationServiceConfiguration(
-                authorizationEndpoint: authorizationEndpoint,
-                tokenEndpoint: tokenEndpoint,
-              ),
-              scopes: ['user:email'],
-              // preferEphemeralSession: false, // true로 하면 매번 로그인 강제됨
-            ),
-          );
-
-      if (result != null) {
-        final accessToken = result.accessToken;
-        print('✅ GitHub Access Token: $accessToken');
-
-        // 이 access token을 backend에 보내서 사용자 인증을 처리하거나 저장
-        final apiService = ApiService();
-        await apiService.sendCodeToBackend(accessToken!, context);
+      if (await canLaunchUrl(authUrl)) {
+        await launchUrl(authUrl, mode: LaunchMode.externalApplication);
       } else {
-        print('❌ 로그인 결과 없음');
+        print('❌ GitHub 로그인 페이지 열기 실패');
       }
     } catch (e) {
       print('❌ GitHub 로그인 실패: $e');
