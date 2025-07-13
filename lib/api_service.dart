@@ -1,14 +1,16 @@
 import 'dart:convert';
 // import 'dart:ffi';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:madcampweek2/home_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io';
 
 import 'package:url_launcher/url_launcher.dart';
 
 class ApiService {
-  // static const String serverIp = 'http://143.248.183.61:3000';
-  static const String serverIp = 'http://192.168.73.1:3000';
+  static const String serverIp = 'http://143.248.183.61:3000';
+  // static const String serverIp = 'http://192.168.73.1:3000';
 
   static const String authBase = '$serverIp/api/auth';
   static const String sessionBase = '$serverIp/api/session';
@@ -309,6 +311,35 @@ class ApiService {
       await launchUrl(url, mode: LaunchMode.externalApplication); // 외부 브라우저로 열기
     } else {
       throw 'Could not launch $url';
+    }
+  }
+
+  Future<void> sendCodeToBackend(String code, BuildContext context) async {
+    try {
+      final response = await http.post(
+        // Uri.parse('https://YOUR_BACKEND_URL/api/auth/github/code'), // 🔁 실제 주소로
+        // Uri.parse('https://d1cb4fb6166e.ngrok-free.app/api/auth/github/code'),
+        Uri.parse('$authBase/github/code'),
+
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'code': code}),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final token = data['token'];
+        print('✅ JWT 토큰 수신: $token');
+
+        // 👉 로그인 성공 처리
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => HomePage(token: token)),
+        );
+      } else {
+        print('❌ 서버 인증 실패: ${response.body}');
+      }
+    } catch (e) {
+      print('❌ 서버 요청 오류: $e');
     }
   }
 }
