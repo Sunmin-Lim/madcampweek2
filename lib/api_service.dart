@@ -302,25 +302,23 @@ class ApiService {
     }
   }
 
-  Future<void> startGitHubLogin() async {
-    final url = Uri.parse(
-      'https://d1cb4fb6166e.ngrok-free.app/api/auth/github',
-    ); // ngrok 또는 서버 IP
+  // Future<void> startGitHubLogin() async {
+  //   final url = Uri.parse('$authBase/github'); // ngrok 또는 서버 IP
 
-    if (await canLaunchUrl(url)) {
-      await launchUrl(url, mode: LaunchMode.externalApplication); // 외부 브라우저로 열기
-    } else {
-      throw 'Could not launch $url';
-    }
-  }
+  //   if (await canLaunchUrl(url)) {
+  //     await launchUrl(url, mode: LaunchMode.externalApplication); // 외부 브라우저로 열기
+  //   } else {
+  //     throw 'Could not launch $url';
+  //   }
+  // }
 
   Future<void> sendCodeToBackend(String code, BuildContext context) async {
     try {
       final response = await http.post(
         // Uri.parse('https://YOUR_BACKEND_URL/api/auth/github/code'), // 🔁 실제 주소로
+
         // Uri.parse('https://d1cb4fb6166e.ngrok-free.app/api/auth/github/code'),
         Uri.parse('$authBase/github/code'),
-
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'code': code}),
       );

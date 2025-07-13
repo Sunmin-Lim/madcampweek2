@@ -18,7 +18,8 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
-
+  static const String serverIp = 'http://143.248.183.61:3000';
+  static const String authBase = '$serverIp/api/auth';
   String message = '';
 
   void login() async {
@@ -143,25 +144,25 @@ class _LoginPageState extends State<LoginPage> {
   //   }
   // }
 
-  void loginWithGitHub() async {
-    const clientId = 'Ov23liBt79Q7o2NROraV';
-    const redirectUri = 'myapp://callback';
+  // void loginWithGitHub() async {
+  //   const clientId = 'Ov23liBt79Q7o2NROraV';
+  //   const redirectUri = 'myapp://callback';
 
-    final authUrl = Uri.parse(
-      'https://github.com/login/oauth/authorize'
-      '?client_id=$clientId'
-      '&redirect_uri=$redirectUri'
-      '&scope=user:email',
-    );
+  //   final authUrl = Uri.parse(
+  //     'https://github.com/login/oauth/authorize'
+  //     '?client_id=$clientId'
+  //     '&redirect_uri=$redirectUri'
+  //     '&scope=user:email',
+  //   );
 
-    print('🔗 Launching GitHub OAuth URL: $authUrl');
+  //   print('🔗 Launching GitHub OAuth URL: $authUrl');
 
-    if (await canLaunchUrl(authUrl)) {
-      await launchUrl(authUrl, mode: LaunchMode.externalApplication);
-    } else {
-      throw 'GitHub 로그인 페이지 열기 실패';
-    }
-  }
+  //   if (await canLaunchUrl(authUrl)) {
+  //     await launchUrl(authUrl, mode: LaunchMode.externalApplication);
+  //   } else {
+  //     throw 'GitHub 로그인 페이지 열기 실패';
+  //   }
+  // }
 
   void _handleIncomingLinks() {
     final appLinks = AppLinks();
@@ -177,6 +178,38 @@ class _LoginPageState extends State<LoginPage> {
         }
       }
     });
+  }
+
+  /*
+http://143.248.183.61:3000/api/auth/github/callback
+*/
+  void loginWithGitHub() async {
+    const clientId = 'Ov23liBt79Q7o2NROraV';
+    // const redirectUri = 'myapp://callback';
+    const redirectUri = '$authBase/github/callback';
+
+    final authUrl = Uri.parse(
+      'https://github.com/login/oauth/authorize'
+      '?client_id=$clientId'
+      '&redirect_uri=$redirectUri'
+      '&scope=user:email',
+    );
+
+    try {
+      final result = await FlutterWebAuth2.authenticate(
+        url: authUrl.toString(),
+        callbackUrlScheme: 'myapp',
+      );
+
+      final code = Uri.parse(result).queryParameters['code'];
+      if (code != null) {
+        print('✅ 앱에서 받은 GitHub code: $code');
+        final apiService = ApiService();
+        await apiService.sendCodeToBackend(code, context);
+      }
+    } catch (e) {
+      print('❌ GitHub 로그인 실패: $e');
+    }
   }
 
   @override
