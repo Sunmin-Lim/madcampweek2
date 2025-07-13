@@ -29,6 +29,9 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+
+        // 👇 이 부분 추가!
+        manifestPlaceholders.put("appAuthRedirectScheme", "myapp")
     }
 
     buildTypes {
