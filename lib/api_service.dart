@@ -1,13 +1,15 @@
 import 'dart:convert';
-import 'dart:ffi';
+//import 'dart:ffi';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io';
 
 class ApiService {
   // 서버 주소 설정 (실제 IP 주소 사용)
-  static const String baseUrl =
-      'http://143.248.183.61:3000/api/auth'; // 실제 서버의 IP로 설정
+
+  static const String baseUrl = 'http://143.248.184.42:3000/api/auth';
+
+  //  'http://143.248.183.61:3000/api/auth'; // 실제 서버의 IP로 설정
   // static const String baseUrl = 'http://10.0.2.2:3000/api/auth'; // 실제 서버의 IP로 설정
 
   // 회원가입 함수
@@ -46,7 +48,8 @@ class ApiService {
   static Future<http.Response> cloneRepo(String repoUrl, String token) async {
     // final url = Uri.parse('http://10.0.2.2:3000/api/gitController/clone-repo');
     final url = Uri.parse(
-      'http://143.248.183.61:3000/api/gitController/clone-repo',
+      //'http://143.248.183.61:3000/api/gitController/clone-repo'
+      'http://143.248.183.42:3000/api/gitController/clone-repo',
     );
 
     // 헤더에 Authorization 토큰 포함
@@ -80,7 +83,8 @@ class ApiService {
 
   static Future<http.Response> getUserId(String token) async {
     final url = Uri.parse(
-      'http://143.248.183.61:3000/api/auth/user',
+      // 'http://143.248.183.61:3000/api/auth/user',
+      'http://143.248.183.42:3000/api/auth/user',
     ); // 사용자 ID를 가져오는 API URL
 
     final headers = {
@@ -103,7 +107,8 @@ class ApiService {
     String imageName,
   ) async {
     final url = Uri.parse(
-      'http://143.248.183.61:3000/api/session/build',
+      //'http://143.248.183.61:3000/api/session/build',
+      'http://143.248.183.42:3000/api/session/build',
     ); // 실제 API URL
 
     final headers = {
@@ -128,7 +133,8 @@ class ApiService {
 
   static Future<http.Response> getSession(String token, String userId) async {
     final url = Uri.parse(
-      'http://143.248.183.61:3000/api/session/get?user_id=$userId', // 쿼리 파라미터로 user_id 전달
+      //'http://143.248.183.61:3000/api/session/get?user_id=$userId', // 쿼리 파라미터로 user_id 전달
+      'http://143.248.183.42:3000/api/session/get?user_id=$userId', // 쿼리 파라미터로 user_id 전달
     );
 
     final headers = {
@@ -153,7 +159,8 @@ class ApiService {
     String port,
   ) async {
     final url = Uri.parse(
-      'http://143.248.183.61:3000/api/domain/run',
+      //'http://143.248.183.61:3000/api/domain/run',
+      'http://143.248.183.42:3000/api/domain/run',
     ); // 실제 API URL
 
     final headers = {
@@ -192,7 +199,8 @@ class ApiService {
     String token,
   ) async {
     final url = Uri.parse(
-      'http://143.248.183.61:3000/api/session/status/$containerId',
+      //'http://143.248.183.61:3000/api/session/status/$containerId',
+      'http://143.248.183.42:3000/api/session/status/$containerId',
     );
 
     final headers = {
@@ -214,7 +222,8 @@ class ApiService {
     String containerId,
     String sessionId,
   ) async {
-    final url = Uri.parse('http://143.248.183.61:3000/api/session/stop');
+    //final url = Uri.parse('http://143.248.183.61:3000/api/session/stop');
+    final url = Uri.parse('http://143.248.183.42:3000/api/session/stop');
 
     final body = jsonEncode({
       'containerId': containerId,
@@ -240,7 +249,8 @@ class ApiService {
     String token,
   ) async {
     final url = Uri.parse(
-      'http://143.248.183.61:3000/api/session/remove/$containerId',
+      //'http://143.248.183.61:3000/api/session/remove/$containerId',
+      'http://143.248.183.42:3000/api/session/remove/$containerId',
     );
 
     final headers = {

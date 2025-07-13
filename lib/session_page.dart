@@ -500,7 +500,7 @@ class _SessionPageState extends State<SessionPage> {
         localPath, // 임의로 설정된 localPath 사용
         imageName, // 임의로 설정된 imageName 사용
       ); // Docker 빌드 요청
-
+      if (!mounted) return;
       if (response.statusCode == 200) {
         setState(() {
           message = 'Docker 빌드 성공!';
