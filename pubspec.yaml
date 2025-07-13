@@ -38,7 +38,7 @@ dependencies:
   shared_preferences: ^2.0.15  # 최신 버전으로 설정
   url_launcher: ^6.3.2
   flutter_web_auth_2: ^4.1.0
-
+  app_links: ^6.4.0
 
 dev_dependencies:
   flutter_test:

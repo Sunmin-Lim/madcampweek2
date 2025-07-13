@@ -4,8 +4,6 @@ import 'dart:convert';
 import 'register_page.dart'; // 회원가입 페이지 import
 import 'home_page.dart'; // 로그인 성공 후 이동할 홈 화면 import
 import 'package:url_launcher/url_launcher.dart';
-// import 'package:uni_links/uni_links.dart';
-// import 'dart:async';
 
 import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
 
@@ -82,23 +80,65 @@ class _LoginPageState extends State<LoginPage> {
   //   }
   // }
 
+  // void loginWithGitHub() async {
+  //   // GitHub OAuth 클라이언트 ID와 리다이렉트 URI 설정
+  //   // 🔁 리다이렉트 URI는 AndroidManifest.xml에 등록되어 있어야
+
+  //   // Ov23liBt79Q7o2NROraV
+  //   // const clientId = 'YOUR_CLIENT_ID';
+  //   const clientId = 'Ov23liBt79Q7o2NROraV'; // GitHub OAuth 클라이언트 ID
+
+  //   const redirectUri = 'myapp://callback'; // 🔁 AndroidManifest에 등록된 딥링크
+  //   final url = Uri.parse(
+  //     'https://github.com/login/oauth/authorize'
+  //     '?client_id=$clientId'
+  //     '&redirect_uri=$redirectUri'
+  //     '&scope=user:email',
+  //   );
+
+  //   if (await canLaunchUrl(url)) {
+  //     await launchUrl(url, mode: LaunchMode.externalApplication);
+  //   } else {
+  //     throw 'GitHub 로그인 페이지를 열 수 없습니다.';
+  //   }
+  // }
+
   void loginWithGitHub() async {
-    // GitHub OAuth 클라이언트 ID와 리다이렉트 URI 설정
-    // 🔁 리다이렉트 URI는 AndroidManifest.xml에 등록되어 있어야
+    const clientId = 'Ov23liBt79Q7o2NROraV';
+    const redirectUri = 'myapp://callback';
 
-    // Ov23liBt79Q7o2NROraV
-    // const clientId = 'YOUR_CLIENT_ID';
-    const clientId = 'Ov23liBt79Q7o2NROraV'; // GitHub OAuth 클라이언트 ID
+    print('🚀 [loginWithGitHub] 함수 진입');
 
-    const redirectUri = 'myapp://callback'; // 🔁 AndroidManifest에 등록된 딥링크
-    final url = Uri.parse(
-      'https://github.com/login/oauth/authorize?client_id=$clientId&redirect_uri=$redirectUri&scope=user:email',
+    final authUrl = Uri.parse(
+      'https://github.com/login/oauth/authorize'
+      '?client_id=$clientId'
+      '&redirect_uri=$redirectUri'
+      '&scope=user:email',
     );
+    print('🔗 [GitHub OAuth] 인증 URL: $authUrl');
 
-    if (await canLaunchUrl(url)) {
-      await launchUrl(url, mode: LaunchMode.externalApplication);
-    } else {
-      throw 'Could not launch GitHub login';
+    try {
+      // ✅ 딥링크가 myapp://callback?code=... 형식으로 오면 자동으로 여기서 기다림
+      print('⏳ [OAuth] FlutterWebAuth2.authenticate 시작...');
+
+      final result = await FlutterWebAuth2.authenticate(
+        url: authUrl.toString(),
+        callbackUrlScheme: 'myapp',
+      );
+
+      print('📦 [OAuth] redirect URI result: $result');
+
+      // ✅ 리디렉션된 URI에서 code 추출
+      final code = Uri.parse(result).queryParameters['code'];
+      print('📥 [OAuth] 받은 code: $code');
+
+      if (code != null) {
+        // TODO: 백엔드에 code를 전송해 JWT 토큰을 교환 (추후 구현)
+      } else {
+        print('❌ code 파라미터가 없음');
+      }
+    } catch (e) {
+      print('❌ GitHub OAuth 실패: $e');
     }
   }
 
@@ -122,11 +162,7 @@ class _LoginPageState extends State<LoginPage> {
             const SizedBox(height: 20),
             ElevatedButton(onPressed: login, child: const Text('로그인')),
             ElevatedButton(
-              onPressed: () {
-                const githubLoginUrl =
-                    'https://d1cb4fb6166e.ngrok-free.app/api/auth/github';
-                launchGitHubLogin(githubLoginUrl);
-              },
+              onPressed: loginWithGitHub,
               child: const Text('GitHub 로그인'),
             ),
             TextButton(
