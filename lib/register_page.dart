@@ -24,40 +24,79 @@ class _RegisterPageState extends State<RegisterPage> {
     );
 
     setState(() {
-      if (response.statusCode == 201) {
-        message = jsonDecode(response.body)['message'];
-      } else {
-        message = jsonDecode(response.body)['message'];
-      }
+      final data = jsonDecode(response.body);
+      message = data['message'];
     });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('회원가입')),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            TextField(
-              controller: emailController,
-              decoration: const InputDecoration(labelText: 'Email'),
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.black),
+        title: const Text('sign up', style: TextStyle(color: Colors.black)),
+      ),
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 28.0,
+              vertical: 24.0,
             ),
-            TextField(
-              controller: passwordController,
-              decoration: const InputDecoration(labelText: 'Password'),
-              obscureText: true,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                const SizedBox(height: 16),
+                TextField(
+                  controller: emailController,
+                  decoration: const InputDecoration(
+                    labelText: 'enter your email',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: passwordController,
+                  obscureText: true,
+                  decoration: const InputDecoration(
+                    labelText: 'enter your password',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: usernameController,
+                  decoration: const InputDecoration(
+                    labelText: 'enter your username',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 32),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: register,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text('signup', style: TextStyle(fontSize: 16)),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                if (message.isNotEmpty)
+                  Text(message, style: const TextStyle(color: Colors.red)),
+              ],
             ),
-            TextField(
-              controller: usernameController,
-              decoration: const InputDecoration(labelText: 'Username'),
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(onPressed: register, child: const Text('회원가입')),
-            const SizedBox(height: 20),
-            Text(message),
-          ],
+          ),
         ),
       ),
     );

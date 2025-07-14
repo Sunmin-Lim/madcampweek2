@@ -20,6 +20,7 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   static const String serverIp = 'http://143.248.184.42:3000';
+  //static const String serverIp = 'http://143.248.183.61:3000';
   static const String authBase = '$serverIp/api/auth';
   String message = '';
   StreamSubscription<Uri>? _linkSubscription;
