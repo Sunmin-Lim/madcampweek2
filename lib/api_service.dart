@@ -344,4 +344,79 @@ class ApiService {
       print('❌ 서버 요청 오류: $e');
     }
   }
+
+  // Get useful links
+  static Future<List<dynamic>> getUsefulLinks() async {
+    final url = Uri.parse('${ApiService.serverIp}/api/community/links');
+    final response = await http.get(url);
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Failed to load links');
+    }
+  }
+
+  // Get top 3 posts by views
+  static Future<List<dynamic>> getTopPosts() async {
+    final url = Uri.parse('${ApiService.serverIp}/api/community/posts/top');
+    final response = await http.get(url);
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Failed to load top posts');
+    }
+  }
+
+  // Search posts by tag
+  static Future<List<dynamic>> searchPostsByTag(String tag) async {
+    final url = Uri.parse(
+      '${ApiService.serverIp}/api/community/posts/search?tag=$tag',
+    );
+    final response = await http.get(url);
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Failed to search posts');
+    }
+  }
+
+  // Create new post
+  static Future<void> createPost(
+    String title,
+    String content,
+    List<String> tags,
+  ) async {
+    final url = Uri.parse('${ApiService.serverIp}/api/community/posts');
+    final response = await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'title': title, 'content': content, 'tags': tags}),
+    );
+    if (response.statusCode != 201) {
+      throw Exception('Failed to create post');
+    }
+  }
+
+  // Increment post view
+  static Future<void> incrementView(String postId) async {
+    final url = Uri.parse(
+      '${ApiService.serverIp}/api/community/posts/$postId/view',
+    );
+    final response = await http.post(url);
+    if (response.statusCode != 200) {
+      throw Exception('Failed to increment view');
+    }
+  }
+
+  // Get post by ID (you might need this in question detail)
+  static Future<Map<String, dynamic>> getPostById(String postId) async {
+    final url = Uri.parse('${ApiService.serverIp}/api/community/posts');
+    final response = await http.get(url);
+    if (response.statusCode == 200) {
+      final allPosts = jsonDecode(response.body);
+      return allPosts.firstWhere((post) => post['_id'] == postId);
+    } else {
+      throw Exception('Failed to get posts');
+    }
+  }
 }
