@@ -375,6 +375,8 @@ class _SessionPageState extends State<SessionPage> {
   String imageName = 'custom-image-name';
 
   final cpuController = TextEditingController(text: '0.5');
+  double cpuSliderValue = 0.5;
+
   final memoryController = TextEditingController(text: '200MB');
   final portController = TextEditingController(text: '8080:80');
 
@@ -386,7 +388,7 @@ class _SessionPageState extends State<SessionPage> {
   bool boxOpen = false;
   bool confettiVisible = false;
   double whalePosition = 0.0;
-  double boxSize = 30;
+  double boxSize = 24;
 
   // Confetti animation
   double confettiScale = 1.0;
@@ -395,7 +397,6 @@ class _SessionPageState extends State<SessionPage> {
 
   // Whale movement
   Timer? whaleMoveTimer;
-  String whaleEmoji = '🐳';
 
   @override
   void initState() {
@@ -413,6 +414,7 @@ class _SessionPageState extends State<SessionPage> {
   void startWhaleAnimation() {
     whaleMoveTimer?.cancel();
     whaleMoveTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
       setState(() {
         if (whalePosition >= 0.9) {
           whalePosition = -0.9;
@@ -431,7 +433,14 @@ class _SessionPageState extends State<SessionPage> {
       children: [
         if (hasBox) Text(boxEmoji, style: TextStyle(fontSize: boxSize)),
         if (hasBox) const SizedBox(width: 6),
-        Text(whaleEmoji, style: const TextStyle(fontSize: 50)),
+        SizedBox(
+          width: 80,
+          height: 80,
+          child: Image.asset(
+            'assets/images/com-effects-unscreen.gif',
+            fit: BoxFit.contain,
+          ),
+        ),
       ],
     );
   }
@@ -444,7 +453,6 @@ class _SessionPageState extends State<SessionPage> {
         width: double.infinity,
         child: Stack(
           children: [
-            // Ocean background
             Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -454,8 +462,6 @@ class _SessionPageState extends State<SessionPage> {
                 ),
               ),
             ),
-
-            // Beach
             AnimatedOpacity(
               opacity: showBeach ? 1.0 : 0.0,
               duration: const Duration(milliseconds: 500),
@@ -467,8 +473,6 @@ class _SessionPageState extends State<SessionPage> {
                 ),
               ),
             ),
-
-            // Confetti
             if (confettiVisible)
               Align(
                 alignment: Alignment(0, -0.5 + confettiOffsetY),
@@ -478,13 +482,11 @@ class _SessionPageState extends State<SessionPage> {
                     scale: confettiScale,
                     child: Text(
                       '🎉🎊🎉🎊',
-                      style: const TextStyle(fontSize: 40),
+                      style: const TextStyle(fontSize: 32),
                     ),
                   ),
                 ),
               ),
-
-            // Whale + Box movement
             AnimatedAlign(
               alignment: Alignment(whalePosition, 0.4),
               duration: const Duration(seconds: 2),
@@ -500,6 +502,7 @@ class _SessionPageState extends State<SessionPage> {
   Future<void> getUserInfo() async {
     try {
       final response = await ApiService.getUserId(widget.token);
+      if (!mounted) return;
       if (response.statusCode == 200) {
         final userData = jsonDecode(response.body);
         setState(() {
@@ -516,6 +519,7 @@ class _SessionPageState extends State<SessionPage> {
         });
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         message = 'Error retrieving user info: $e';
         isLoading = false;
@@ -533,27 +537,25 @@ class _SessionPageState extends State<SessionPage> {
       showBeach = true;
       boxOpen = false;
       confettiVisible = false;
-      boxSize = 30;
+      boxSize = 24;
     });
 
     await Future.delayed(const Duration(milliseconds: 500));
+    if (!mounted) return;
     setState(() {
       whalePosition = -1;
     });
 
     await Future.delayed(const Duration(seconds: 1));
     final success = await fakeBuildResult();
+    if (!mounted) return;
 
     if (success) {
       setState(() {
-        whaleEmoji = '🐳💦'; // ✅ 빌드 성공 → 물 뿜기
         hasBox = true;
         whalePosition = 0;
+        boxSize = 60;
         message = 'Docker 빌드 성공!';
-      });
-      await Future.delayed(const Duration(seconds: 1));
-      setState(() {
-        whaleEmoji = '🐳'; // ✅ 다시 🐳
       });
     } else {
       setState(() {
@@ -564,6 +566,7 @@ class _SessionPageState extends State<SessionPage> {
     }
 
     await Future.delayed(const Duration(seconds: 1));
+    if (!mounted) return;
     setState(() {
       showBeach = false;
     });
@@ -580,12 +583,13 @@ class _SessionPageState extends State<SessionPage> {
       hasBox = true;
       boxOpen = false;
       confettiVisible = false;
-      boxSize = 30;
+      boxSize = 24;
     });
 
     await Future.delayed(const Duration(seconds: 1));
     final success = await fakeRunResult();
 
+    if (!mounted) return;
     setState(() {
       if (success) {
         boxOpen = true;
@@ -593,12 +597,12 @@ class _SessionPageState extends State<SessionPage> {
         confettiScale = 1.0;
         confettiOpacity = 1.0;
         confettiOffsetY = 0.0;
-        boxSize = 80;
+        boxSize = 60;
         message = '컨테이너 실행 성공!';
       } else {
         boxOpen = false;
         confettiVisible = false;
-        boxSize = 30;
+        boxSize = 24;
         message = '컨테이너 실행 실패!';
       }
     });
@@ -614,6 +618,10 @@ class _SessionPageState extends State<SessionPage> {
 
     if (confettiVisible) {
       Timer.periodic(const Duration(milliseconds: 50), (timer) {
+        if (!mounted) {
+          timer.cancel();
+          return;
+        }
         setState(() {
           confettiScale -= 0.05;
           confettiOpacity -= 0.07;
@@ -621,6 +629,7 @@ class _SessionPageState extends State<SessionPage> {
         });
         if (confettiScale <= 0 || confettiOpacity <= 0) {
           timer.cancel();
+          if (!mounted) return;
           setState(() {
             confettiVisible = false;
             confettiScale = 1.0;
@@ -628,7 +637,7 @@ class _SessionPageState extends State<SessionPage> {
             confettiOffsetY = 0.0;
             boxOpen = false;
             hasBox = true;
-            boxSize = 30;
+            boxSize = 24;
             message = 'Stop 완료!';
             whaleState = WhaleState.idle;
           });
@@ -636,13 +645,14 @@ class _SessionPageState extends State<SessionPage> {
       });
     } else {
       await Future.delayed(const Duration(seconds: 2));
+      if (!mounted) return;
       setState(() {
         message = 'Stop 완료!';
         whaleState = WhaleState.idle;
         boxOpen = false;
         confettiVisible = false;
         hasBox = true;
-        boxSize = 30;
+        boxSize = 24;
       });
     }
   }
@@ -659,11 +669,13 @@ class _SessionPageState extends State<SessionPage> {
     });
 
     await Future.delayed(const Duration(milliseconds: 500));
+    if (!mounted) return;
     setState(() {
       whalePosition = -1;
     });
 
     await Future.delayed(const Duration(seconds: 1));
+    if (!mounted) return;
     setState(() {
       hasBox = false;
       whalePosition = 0;
@@ -671,6 +683,7 @@ class _SessionPageState extends State<SessionPage> {
     });
 
     await Future.delayed(const Duration(seconds: 1));
+    if (!mounted) return;
     setState(() {
       showBeach = false;
     });
@@ -699,7 +712,7 @@ class _SessionPageState extends State<SessionPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text(
-          'Docker 빌드 및 실행',
+          'Docker Container',
           style: TextStyle(color: Colors.black),
         ),
         backgroundColor: Colors.white,
@@ -718,40 +731,63 @@ class _SessionPageState extends State<SessionPage> {
                     const SizedBox(height: 16),
                     whaleWidget(),
                     const SizedBox(height: 32),
-                    Row(
+
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(
-                          child: TextField(
-                            controller: cpuController,
-                            decoration: const InputDecoration(
-                              labelText: 'CPU',
-                              border: OutlineInputBorder(),
+                        const Text('CPU'),
+                        Row(
+                          children: [
+                            const Text('🐢'),
+                            Expanded(
+                              child: Slider(
+                                value: cpuSliderValue,
+                                min: 0.1,
+                                max: 2.0,
+                                divisions: 19,
+                                label:
+                                    '${cpuSliderValue.toStringAsFixed(2)} vCPU',
+                                onChanged: (newValue) {
+                                  setState(() {
+                                    cpuSliderValue = newValue;
+                                    cpuController.text = cpuSliderValue
+                                        .toStringAsFixed(2);
+                                  });
+                                },
+                              ),
                             ),
-                          ),
+                            const Text('🐇'),
+                          ],
                         ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: TextField(
-                            controller: memoryController,
-                            decoration: const InputDecoration(
-                              labelText: 'Memory',
-                              border: OutlineInputBorder(),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                controller: memoryController,
+                                decoration: const InputDecoration(
+                                  labelText: 'Memory',
+                                  border: OutlineInputBorder(),
+                                ),
+                              ),
                             ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: TextField(
-                            controller: portController,
-                            decoration: const InputDecoration(
-                              labelText: 'Port',
-                              border: OutlineInputBorder(),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: TextField(
+                                controller: portController,
+                                decoration: const InputDecoration(
+                                  labelText: 'Port',
+                                  border: OutlineInputBorder(),
+                                ),
+                              ),
                             ),
-                          ),
+                          ],
                         ),
                       ],
                     ),
+
                     const SizedBox(height: 32),
+
                     _buildButton(
                       'Build',
                       Colors.blue.shade300,
@@ -768,13 +804,14 @@ class _SessionPageState extends State<SessionPage> {
                       Colors.blue.shade600,
                       removeDockerContainer,
                     ),
+
                     const SizedBox(height: 24),
                     Text(
                       message,
                       style: const TextStyle(fontSize: 16, color: Colors.black),
                     ),
                     Text(
-                      'WhaleDev 2025',
+                      'BackOverFlow 2025',
                       style: TextStyle(color: Colors.grey, fontSize: 12),
                     ),
                   ],

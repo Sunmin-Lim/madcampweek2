@@ -39,6 +39,7 @@ dependencies:
   url_launcher: ^6.3.2
   flutter_web_auth_2: ^4.1.0
   app_links: ^6.4.0
+  video_player: ^2.7.2
   # flutter_appauth: ^9.0.1
 
 dev_dependencies:
@@ -58,11 +59,17 @@ dev_dependencies:
 
 # The following section is specific to Flutter packages.
 flutter:
-
-  # The following line ensures that the Material Icons font is
+# The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+
+  assets:
+  - assets/videos/whale.mp4
+  - assets/images/githublogo.png
+  - assets/images/whale.png
+  - assets/images/whale.gif
+  - assets/images/com-effects-unscreen.gif
 
   # To add assets to your application, add an assets section, like this:
   # assets:

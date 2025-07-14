@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:app_links/app_links.dart';
+import 'package:video_player/video_player.dart';
 
 import 'api_service.dart';
 import 'register_page.dart';
@@ -19,16 +20,32 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
+
   static const String serverIp = 'http://143.248.184.42:3000';
-  //static const String serverIp = 'http://143.248.183.61:3000';
   static const String authBase = '$serverIp/api/auth';
+
   String message = '';
   StreamSubscription<Uri>? _linkSubscription;
+
+  late VideoPlayerController _videoController;
+  bool _videoInitialized = false;
 
   @override
   void initState() {
     super.initState();
     _handleIncomingLinks();
+    _initializeVideo();
+  }
+
+  void _initializeVideo() async {
+    _videoController = VideoPlayerController.asset('assets/videos/whale.mp4');
+    await _videoController.initialize();
+    _videoController.setLooping(true);
+    _videoController.play();
+
+    setState(() {
+      _videoInitialized = true;
+    });
   }
 
   void _handleIncomingLinks() {
@@ -103,6 +120,15 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   @override
+  void dispose() {
+    _linkSubscription?.cancel();
+    emailController.dispose();
+    passwordController.dispose();
+    _videoController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
@@ -128,19 +154,26 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  // Whale Emoji as Logo
+
+                  // Whale Video as Logo
                   Container(
-                    width: 150,
-                    height: 150,
+                    width: 200,
+                    height: 200,
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(16),
                     ),
-                    child: const Center(
-                      child: Text('🐳', style: TextStyle(fontSize: 80)),
-                    ),
+                    child: _videoInitialized
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(16),
+                            child: VideoPlayer(_videoController),
+                          )
+                        : const Center(child: CircularProgressIndicator()),
                   ),
+
                   const SizedBox(height: 32),
+
+                  // Email Field
                   TextField(
                     controller: emailController,
                     decoration: const InputDecoration(
@@ -148,7 +181,10 @@ class _LoginPageState extends State<LoginPage> {
                       border: OutlineInputBorder(),
                     ),
                   ),
+
                   const SizedBox(height: 16),
+
+                  // Password Field
                   TextField(
                     controller: passwordController,
                     obscureText: true,
@@ -157,6 +193,7 @@ class _LoginPageState extends State<LoginPage> {
                       border: OutlineInputBorder(),
                     ),
                   ),
+
                   const SizedBox(height: 32),
 
                   // Login Button
@@ -223,19 +260,32 @@ class _LoginPageState extends State<LoginPage> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      child: const Text(
-                        'gitHub login',
-                        style: TextStyle(fontSize: 16),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Image.asset(
+                            'assets/images/githublogo.png',
+                            height: 24,
+                            width: 24,
+                          ),
+                          const SizedBox(width: 12),
+                          const Text(
+                            'gitHub login',
+                            style: TextStyle(fontSize: 16),
+                          ),
+                        ],
                       ),
                     ),
                   ),
 
                   const SizedBox(height: 12),
 
-                  if (message.isNotEmpty) ...[
+                  if (message.isNotEmpty)
                     Text(message, style: const TextStyle(color: Colors.red)),
-                  ],
+
                   const SizedBox(height: 24),
+
                   Text(
                     'WhaleDev 2025',
                     style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
@@ -247,13 +297,5 @@ class _LoginPageState extends State<LoginPage> {
         ),
       ),
     );
-  }
-
-  @override
-  void dispose() {
-    _linkSubscription?.cancel();
-    emailController.dispose();
-    passwordController.dispose();
-    super.dispose();
   }
 }

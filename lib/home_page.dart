@@ -335,10 +335,15 @@
 //   }
 // }
 
-import 'package:flutter/material.dart';
-import 'api_service.dart'; // ApiService 임포트
+import 'dart:async';
 import 'dart:convert';
-import 'session_page.dart'; // SessionPage 임포트
+import 'package:flutter/material.dart';
+import 'package:video_player/video_player.dart';
+import 'api_service.dart';
+import 'session_page.dart';
+import 'warning_page.dart';
+import 'community_page.dart';
+import 'archive_page.dart';
 
 class HomePage extends StatefulWidget {
   final String token;
@@ -358,10 +363,54 @@ class _HomePageState extends State<HomePage> {
   bool isLoadingRepos = true;
   WhaleState whaleState = WhaleState.idle;
 
+  late VideoPlayerController _videoController;
+  bool _videoInitialized = false;
+
   @override
   void initState() {
     super.initState();
     fetchClonedRepos();
+    _initializeVideo();
+  }
+
+  Future<void> _initializeVideo() async {
+    _videoController = VideoPlayerController.asset('assets/videos/whale.mp4');
+    await _videoController.initialize();
+    _videoController.setLooping(true);
+    setState(() {
+      _videoInitialized = true;
+    });
+    _pauseVideo(); // Start paused
+  }
+
+  @override
+  void dispose() {
+    repoUrlController.dispose();
+    _videoController.dispose();
+    super.dispose();
+  }
+
+  void _playVideo() {
+    if (_videoInitialized && !_videoController.value.isPlaying) {
+      _videoController.play();
+    }
+  }
+
+  void _pauseVideo() {
+    if (_videoInitialized && _videoController.value.isPlaying) {
+      _videoController.pause();
+    }
+  }
+
+  void _setWhaleState(WhaleState state) {
+    setState(() {
+      whaleState = state;
+    });
+    if (state == WhaleState.loading) {
+      _playVideo();
+    } else {
+      _pauseVideo();
+    }
   }
 
   void cloneRepo() async {
@@ -369,25 +418,21 @@ class _HomePageState extends State<HomePage> {
 
     if (repoUrl.isEmpty) {
       setState(() {
-        message = '리포지토리 URL을 입력해주세요.';
+        message = 'Please enter a repository URL.';
       });
       return;
     }
 
-    print("Received Token: ${widget.token}");
-
-    setState(() {
-      whaleState = WhaleState.loading;
-    });
+    _setWhaleState(WhaleState.loading);
 
     try {
       final response = await ApiService.cloneRepo(repoUrl, widget.token);
 
       if (response.statusCode == 200) {
         setState(() {
-          message = 'Git 리포지토리 클론 성공!';
-          whaleState = WhaleState.success;
+          message = 'Repository cloned successfully!';
         });
+        _setWhaleState(WhaleState.idle); // pause after success
 
         Navigator.push(
           context,
@@ -395,18 +440,20 @@ class _HomePageState extends State<HomePage> {
             builder: (context) =>
                 SessionPage(token: widget.token, repoUrl: repoUrl),
           ),
-        );
+        ).then((_) {
+          _setWhaleState(WhaleState.idle);
+        });
       } else {
         setState(() {
           message = 'Error: ${response.body}';
-          whaleState = WhaleState.idle;
         });
+        _setWhaleState(WhaleState.idle);
       }
     } catch (e) {
       setState(() {
-        message = 'Git 리포지토리 클론 중 오류가 발생했습니다. 오류: $e';
-        whaleState = WhaleState.idle;
+        message = 'Error cloning repository: $e';
       });
+      _setWhaleState(WhaleState.idle);
     }
   }
 
@@ -447,16 +494,22 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  // Whale animation widget
-  Widget whaleWidget() {
-    switch (whaleState) {
-      case WhaleState.idle:
-        return const Text('🐳', style: TextStyle(fontSize: 80));
-      case WhaleState.loading:
-        return const Text('🐋', style: TextStyle(fontSize: 80));
-      case WhaleState.success:
-        return const Text('🐳💦', style: TextStyle(fontSize: 80));
+  Widget whaleVideoWidget() {
+    if (!_videoInitialized) {
+      return const SizedBox(
+        height: 200,
+        child: Center(child: CircularProgressIndicator()),
+      );
     }
+
+    return SizedBox(
+      width: 200,
+      height: 200,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: VideoPlayer(_videoController),
+      ),
+    );
   }
 
   @override
@@ -474,7 +527,7 @@ class _HomePageState extends State<HomePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  // Back button + title row
+                  // Top Bar with Back, Title, and Emojis
                   Row(
                     children: [
                       IconButton(
@@ -483,25 +536,45 @@ class _HomePageState extends State<HomePage> {
                           Navigator.pop(context);
                         },
                       ),
-                      Expanded(
-                        child: Center(
-                          child: Text(
-                            'clone git repository',
-                            style: const TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.normal,
-                              color: Colors.black,
-                            ),
-                          ),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'clone git repository',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black,
                         ),
+                      ),
+                      const Spacer(),
+                      IconButton(
+                        icon: const Text('⚠️', style: TextStyle(fontSize: 24)),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const WarningPage(),
+                            ),
+                          );
+                        },
+                      ),
+                      IconButton(
+                        icon: const Text('👥', style: TextStyle(fontSize: 24)),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const CommunityPage(),
+                            ),
+                          );
+                        },
                       ),
                     ],
                   ),
 
                   const SizedBox(height: 24),
 
-                  // Whale Emoji / Animation
-                  whaleWidget(),
+                  // Whale Video
+                  whaleVideoWidget(),
 
                   const SizedBox(height: 24),
 
@@ -509,7 +582,7 @@ class _HomePageState extends State<HomePage> {
                   TextField(
                     controller: repoUrlController,
                     decoration: const InputDecoration(
-                      labelText: 'git repository url',
+                      labelText: 'https://github.com/...',
                       border: OutlineInputBorder(),
                     ),
                   ),
@@ -538,7 +611,7 @@ class _HomePageState extends State<HomePage> {
 
                   const SizedBox(height: 16),
 
-                  // Error / Success message
+                  // Error / Success Message
                   if (message.isNotEmpty)
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -550,14 +623,14 @@ class _HomePageState extends State<HomePage> {
 
                   const SizedBox(height: 24),
 
-                  // Cloned Repos title
+                  // Cloned Repos Title
                   const Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
                       'cloned repositories',
                       style: TextStyle(
-                        fontWeight: FontWeight.normal,
                         fontSize: 18,
+                        fontWeight: FontWeight.normal,
                       ),
                     ),
                   ),
@@ -584,19 +657,45 @@ class _HomePageState extends State<HomePage> {
                                 ),
                                 child: ListTile(
                                   title: Text(url),
-                                  trailing: ElevatedButton(
-                                    child: const Text('open'),
-                                    onPressed: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) => SessionPage(
-                                            token: widget.token,
-                                            repoUrl: url,
-                                          ),
+                                  trailing: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      IconButton(
+                                        icon: const Text(
+                                          '📦',
+                                          style: TextStyle(fontSize: 24),
                                         ),
-                                      );
-                                    },
+                                        onPressed: () {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) => SessionPage(
+                                                token: widget.token,
+                                                repoUrl: url,
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                      const SizedBox(width: 8),
+                                      IconButton(
+                                        icon: const Text(
+                                          '📨',
+                                          style: TextStyle(fontSize: 24),
+                                        ),
+                                        onPressed: () {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) => ArchivePage(
+                                                token: widget.token,
+                                                repoUrl: url,
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ],
                                   ),
                                 ),
                               );
@@ -606,9 +705,8 @@ class _HomePageState extends State<HomePage> {
 
                   const SizedBox(height: 24),
 
-                  // Footer
                   Text(
-                    'WhaleDev 2025',
+                    'BackOverFlow 2025',
                     style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
                   ),
                 ],
@@ -618,11 +716,5 @@ class _HomePageState extends State<HomePage> {
         ),
       ),
     );
-  }
-
-  @override
-  void dispose() {
-    repoUrlController.dispose();
-    super.dispose();
   }
 }
