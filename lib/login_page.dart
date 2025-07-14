@@ -8,7 +8,7 @@ import 'home_page.dart'; // 로그인 성공 후 이동할 홈 화면 import
 import 'package:url_launcher/url_launcher.dart';
 import 'package:app_links/app_links.dart';
 
-import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
+// import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
 // import 'package:flutter_appauth/flutter_appauth.dart';
 
 class LoginPage extends StatefulWidget {
@@ -21,7 +21,7 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
-  static const String serverIp = 'http://143.248.183.61:3000';
+  static const String serverIp = 'http://143.248.184.42:3000';
   static const String authBase = '$serverIp/api/auth';
   String message = '';
   StreamSubscription<Uri>? _linkSubscription;
