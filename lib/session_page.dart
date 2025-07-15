@@ -350,6 +350,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'api_service.dart';
+import 'search_page.dart';
 
 class SessionPage extends StatefulWidget {
   final String token;
@@ -382,7 +383,6 @@ class _SessionPageState extends State<SessionPage> {
 
   WhaleState whaleState = WhaleState.idle;
 
-  // Animation state
   bool hasBox = false;
   bool showBeach = false;
   bool boxOpen = false;
@@ -390,12 +390,10 @@ class _SessionPageState extends State<SessionPage> {
   double whalePosition = 0.0;
   double boxSize = 24;
 
-  // Confetti animation
   double confettiScale = 1.0;
   double confettiOpacity = 1.0;
   double confettiOffsetY = 0.0;
 
-  // Whale movement
   Timer? whaleMoveTimer;
 
   @override
@@ -527,180 +525,6 @@ class _SessionPageState extends State<SessionPage> {
     }
   }
 
-  Future<void> buildDockerContainer() async {
-    if (isLoading) return;
-    setWhaleState(WhaleState.building);
-    setState(() {
-      message = 'Docker 빌드 중...';
-      hasBox = false;
-      whalePosition = 0;
-      showBeach = true;
-      boxOpen = false;
-      confettiVisible = false;
-      boxSize = 24;
-    });
-
-    await Future.delayed(const Duration(milliseconds: 500));
-    if (!mounted) return;
-    setState(() {
-      whalePosition = -1;
-    });
-
-    await Future.delayed(const Duration(seconds: 1));
-    final success = await fakeBuildResult();
-    if (!mounted) return;
-
-    if (success) {
-      setState(() {
-        hasBox = true;
-        whalePosition = 0;
-        boxSize = 60;
-        message = 'Docker 빌드 성공!';
-      });
-    } else {
-      setState(() {
-        hasBox = false;
-        whalePosition = 0;
-        message = 'Docker 빌드 실패!';
-      });
-    }
-
-    await Future.delayed(const Duration(seconds: 1));
-    if (!mounted) return;
-    setState(() {
-      showBeach = false;
-    });
-
-    setWhaleState(WhaleState.idle);
-  }
-
-  Future<void> runDockerContainer() async {
-    if (isLoading) return;
-    setWhaleState(WhaleState.running);
-    setState(() {
-      message = '컨테이너 실행 중...';
-      whalePosition = 0;
-      hasBox = true;
-      boxOpen = false;
-      confettiVisible = false;
-      boxSize = 24;
-    });
-
-    await Future.delayed(const Duration(seconds: 1));
-    final success = await fakeRunResult();
-
-    if (!mounted) return;
-    setState(() {
-      if (success) {
-        boxOpen = true;
-        confettiVisible = true;
-        confettiScale = 1.0;
-        confettiOpacity = 1.0;
-        confettiOffsetY = 0.0;
-        boxSize = 60;
-        message = '컨테이너 실행 성공!';
-      } else {
-        boxOpen = false;
-        confettiVisible = false;
-        boxSize = 24;
-        message = '컨테이너 실행 실패!';
-      }
-    });
-  }
-
-  void stopContainer() async {
-    if (isLoading) return;
-    setWhaleState(WhaleState.stopping);
-    setState(() {
-      message = 'Stop 진행 중...';
-      whalePosition = 0;
-    });
-
-    if (confettiVisible) {
-      Timer.periodic(const Duration(milliseconds: 50), (timer) {
-        if (!mounted) {
-          timer.cancel();
-          return;
-        }
-        setState(() {
-          confettiScale -= 0.05;
-          confettiOpacity -= 0.07;
-          confettiOffsetY += 0.05;
-        });
-        if (confettiScale <= 0 || confettiOpacity <= 0) {
-          timer.cancel();
-          if (!mounted) return;
-          setState(() {
-            confettiVisible = false;
-            confettiScale = 1.0;
-            confettiOpacity = 1.0;
-            confettiOffsetY = 0.0;
-            boxOpen = false;
-            hasBox = true;
-            boxSize = 24;
-            message = 'Stop 완료!';
-            whaleState = WhaleState.idle;
-          });
-        }
-      });
-    } else {
-      await Future.delayed(const Duration(seconds: 2));
-      if (!mounted) return;
-      setState(() {
-        message = 'Stop 완료!';
-        whaleState = WhaleState.idle;
-        boxOpen = false;
-        confettiVisible = false;
-        hasBox = true;
-        boxSize = 24;
-      });
-    }
-  }
-
-  void removeDockerContainer() async {
-    if (isLoading) return;
-    setWhaleState(WhaleState.deleting);
-    setState(() {
-      message = '컨테이너 삭제 중...';
-      whalePosition = 0;
-      showBeach = true;
-      boxOpen = false;
-      confettiVisible = false;
-    });
-
-    await Future.delayed(const Duration(milliseconds: 500));
-    if (!mounted) return;
-    setState(() {
-      whalePosition = -1;
-    });
-
-    await Future.delayed(const Duration(seconds: 1));
-    if (!mounted) return;
-    setState(() {
-      hasBox = false;
-      whalePosition = 0;
-      message = '삭제 완료!';
-    });
-
-    await Future.delayed(const Duration(seconds: 1));
-    if (!mounted) return;
-    setState(() {
-      showBeach = false;
-    });
-
-    setWhaleState(WhaleState.idle);
-  }
-
-  Future<bool> fakeBuildResult() async {
-    await Future.delayed(const Duration(seconds: 1));
-    return true;
-  }
-
-  Future<bool> fakeRunResult() async {
-    await Future.delayed(const Duration(seconds: 1));
-    return true;
-  }
-
   void setWhaleState(WhaleState newState) {
     setState(() {
       whaleState = newState;
@@ -731,7 +555,6 @@ class _SessionPageState extends State<SessionPage> {
                     const SizedBox(height: 16),
                     whaleWidget(),
                     const SizedBox(height: 32),
-
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -785,26 +608,11 @@ class _SessionPageState extends State<SessionPage> {
                         ),
                       ],
                     ),
-
                     const SizedBox(height: 32),
-
-                    _buildButton(
-                      'Build',
-                      Colors.blue.shade300,
-                      buildDockerContainer,
-                    ),
-                    _buildButton(
-                      'Run',
-                      Colors.blue.shade400,
-                      runDockerContainer,
-                    ),
-                    _buildButton('Stop', Colors.blue.shade500, stopContainer),
-                    _buildButton(
-                      'Delete',
-                      Colors.blue.shade600,
-                      removeDockerContainer,
-                    ),
-
+                    _buildButton('Build', Colors.blue.shade300, () {}),
+                    _buildButton('Run', Colors.blue.shade400, () {}),
+                    _buildButton('Stop', Colors.blue.shade500, () {}),
+                    _buildButton('Delete', Colors.blue.shade600, () {}),
                     const SizedBox(height: 24),
                     Text(
                       message,
@@ -818,6 +626,16 @@ class _SessionPageState extends State<SessionPage> {
                 ),
               ),
             ),
+      floatingActionButton: FloatingActionButton(
+        tooltip: 'Help / Search',
+        child: const Icon(Icons.help_outline),
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const SearchPage()),
+          );
+        },
+      ),
     );
   }
 

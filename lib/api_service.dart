@@ -10,7 +10,7 @@ class ApiService {
   static const String sessionBase = '$serverIp/api/session';
   static const String gitBase = '$serverIp/api/gitController';
   static const String domainBase = '$serverIp/api/domain';
-  static const String communityBase = '$serverIp/api/community';
+  static const String searchBase = '$serverIp/api/search';
 
   // -------------------------
   // AUTH
@@ -190,10 +190,10 @@ class ApiService {
   }
 
   // -------------------------
-  // COMMUNITY
+  // SEArCH
   // -------------------------
   static Future<List<dynamic>> getUsefulLinks() async {
-    final url = Uri.parse('$communityBase/links');
+    final url = Uri.parse('$searchBase/links');
     final response = await http.get(url);
     if (response.statusCode == 200) {
       final body = jsonDecode(response.body);
@@ -204,20 +204,8 @@ class ApiService {
     }
   }
 
-  static Future<List<dynamic>> getTopPosts() async {
-    final url = Uri.parse('$communityBase/posts/top');
-    final response = await http.get(url);
-    if (response.statusCode == 200) {
-      final body = jsonDecode(response.body);
-      if (body is List) return body;
-      throw Exception('Server returned invalid top posts.');
-    } else {
-      throw Exception('Failed to load top posts');
-    }
-  }
-
   static Future<List<dynamic>> searchPostsByTag(String tag) async {
-    final url = Uri.parse('$communityBase/posts/search?tag=$tag');
+    final url = Uri.parse('$searchBase/posts/search?tag=$tag');
     final response = await http.get(url);
     if (response.statusCode == 200) {
       final body = jsonDecode(response.body);
@@ -228,25 +216,8 @@ class ApiService {
     }
   }
 
-  static Future<void> createPost(
-    String title,
-    String content,
-    List<String> tags,
-  ) async {
-    final url = Uri.parse('$communityBase/posts');
-    final body = jsonEncode({'title': title, 'content': content, 'tags': tags});
-    final response = await http.post(
-      url,
-      headers: {'Content-Type': 'application/json'},
-      body: body,
-    );
-    if (response.statusCode != 201) {
-      throw Exception('Failed to create post');
-    }
-  }
-
   static Future<void> incrementView(String postId) async {
-    final url = Uri.parse('$communityBase/posts/$postId/view');
+    final url = Uri.parse('$searchBase/posts/$postId/view');
     final response = await http.post(url);
     if (response.statusCode != 200) {
       throw Exception('Failed to increment view');
@@ -254,7 +225,7 @@ class ApiService {
   }
 
   static Future<Map<String, dynamic>> getPostById(String postId) async {
-    final url = Uri.parse('$communityBase/posts/$postId');
+    final url = Uri.parse('$searchBase/posts/$postId');
     final response = await http.get(url);
     if (response.statusCode == 200) {
       final body = jsonDecode(response.body);
@@ -268,7 +239,7 @@ class ApiService {
   }
 
   static Future<void> addAnswer(String postId, String text) async {
-    final url = Uri.parse('$communityBase/posts/$postId/answers');
+    final url = Uri.parse('$searchBase/posts/$postId/answers');
     final body = jsonEncode({'text': text});
     final response = await http.post(
       url,
@@ -282,7 +253,7 @@ class ApiService {
 
   // ✅ Corrected: Use GET /searchGoogle?q=...
   static Future<List<dynamic>> crawlGoogleAndGetResults(String query) async {
-    final url = Uri.parse('$communityBase/searchGoogle?q=$query');
+    final url = Uri.parse('$searchBase/searchGoogle?q=$query');
     final response = await http.get(url);
 
     if (response.statusCode == 200) {

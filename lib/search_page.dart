@@ -13,8 +13,6 @@ class SearchPage extends StatefulWidget {
 
 class _SearchPageState extends State<SearchPage> {
   final TextEditingController searchController = TextEditingController();
-  final TextEditingController pinNameController = TextEditingController();
-  final TextEditingController pinUrlController = TextEditingController();
 
   List<dynamic> results = [];
   List<Map<String, String>> pinnedLinks = [];
@@ -29,8 +27,6 @@ class _SearchPageState extends State<SearchPage> {
   @override
   void dispose() {
     searchController.dispose();
-    pinNameController.dispose();
-    pinUrlController.dispose();
     super.dispose();
   }
 
@@ -51,18 +47,20 @@ class _SearchPageState extends State<SearchPage> {
     await prefs.setString('pinnedLinks', jsonEncode(pinnedLinks));
   }
 
-  void addPinnedLink(String name, String url) {
+  void togglePin(String name, String url) {
+    final existingIndex = pinnedLinks.indexWhere((link) => link['url'] == url);
     setState(() {
-      pinnedLinks.add({'name': name, 'url': url});
+      if (existingIndex != -1) {
+        pinnedLinks.removeAt(existingIndex);
+      } else {
+        pinnedLinks.add({'name': name, 'url': url});
+      }
     });
     savePinnedLinks();
   }
 
-  void removePinnedLink(int index) {
-    setState(() {
-      pinnedLinks.removeAt(index);
-    });
-    savePinnedLinks();
+  bool isPinned(String url) {
+    return pinnedLinks.any((link) => link['url'] == url);
   }
 
   Future<void> onSearch() async {
@@ -80,107 +78,39 @@ class _SearchPageState extends State<SearchPage> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('검색 오류: $e')));
+        ).showSnackBar(SnackBar(content: Text('Search error: $e')));
       }
     } finally {
       setState(() => isLoading = false);
     }
-  }
-
-  Future<void> onAskQuestion() async {
-    final query = searchController.text.trim();
-    if (query.isEmpty) return;
-
-    setState(() => isLoading = true);
-    try {
-      await ApiService.crawlGoogleAndGetResults(query);
-      await onSearch(); // refresh results after asking
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('✅ 질문이 등록되었습니다.')));
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('질문 등록 오류: $e')));
-      }
-    } finally {
-      setState(() => isLoading = false);
-    }
-  }
-
-  void showAddPinnedDialog() {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('📌 새 링크 추가'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: pinNameController,
-              decoration: const InputDecoration(hintText: '이름'),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: pinUrlController,
-              decoration: const InputDecoration(hintText: 'URL'),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-            },
-            child: const Text('취소'),
-          ),
-          TextButton(
-            onPressed: () {
-              final name = pinNameController.text.trim();
-              final url = pinUrlController.text.trim();
-              if (name.isNotEmpty && url.isNotEmpty) {
-                addPinnedLink(name, url);
-              }
-              pinNameController.clear();
-              pinUrlController.clear();
-              Navigator.pop(context);
-            },
-            child: const Text('저장'),
-          ),
-        ],
-      ),
-    );
   }
 
   Widget buildPinnedLinksSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        const SizedBox(height: 16),
         const Text(
-          '📌 내가 고정한 링크',
+          '📌 My Pinned Links',
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
         if (pinnedLinks.isEmpty)
-          const Text('아직 고정한 링크가 없습니다.')
+          const Text('No pinned links yet.')
         else
           Column(
             children: pinnedLinks
-                .asMap()
-                .entries
                 .map(
                   (entry) => Card(
                     child: ListTile(
-                      title: Text(entry.value['name']!),
-                      subtitle: Text(entry.value['url']!),
+                      title: Text(entry['name'] ?? ''),
+                      subtitle: Text(entry['url'] ?? ''),
                       trailing: IconButton(
-                        icon: const Icon(Icons.delete),
-                        onPressed: () => removePinnedLink(entry.key),
+                        icon: const Icon(Icons.star, color: Colors.amber),
+                        onPressed: () =>
+                            togglePin(entry['name']!, entry['url']!),
                       ),
-                      onTap: () => launchUrl(Uri.parse(entry.value['url']!)),
+                      onTap: () => launchUrl(Uri.parse(entry['url']!)),
                     ),
                   ),
                 )
@@ -196,31 +126,43 @@ class _SearchPageState extends State<SearchPage> {
       children: [
         const SizedBox(height: 24),
         const Text(
-          '🔎 검색 결과',
+          '🔎 Search Results',
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
         if (results.isEmpty)
-          const Text('검색 결과가 없습니다.')
+          const Text('No search results.')
         else
           Column(
-            children: results
-                .map(
-                  (item) => Card(
-                    child: ListTile(
-                      title: Text(item['title'] ?? ''),
-                      subtitle: Text(item['content'] ?? ''),
-                      onTap: () {
-                        if (item['answers'] != null &&
-                            item['answers'].isNotEmpty) {
-                          final link = item['answers'][0]['text'];
-                          launchUrl(Uri.parse(link));
-                        }
-                      },
-                    ),
-                  ),
-                )
-                .toList(),
+            children: results.map((item) {
+              final title = item['title'] ?? '';
+              final content = item['content'] ?? '';
+              final link =
+                  (item['answers'] != null && item['answers'].isNotEmpty)
+                  ? item['answers'][0]['text']
+                  : null;
+
+              return Card(
+                child: ListTile(
+                  title: Text(title),
+                  subtitle: Text(content),
+                  trailing: link != null
+                      ? IconButton(
+                          icon: Icon(
+                            isPinned(link) ? Icons.star : Icons.star_border,
+                            color: isPinned(link) ? Colors.amber : null,
+                          ),
+                          onPressed: () => togglePin(title, link),
+                        )
+                      : null,
+                  onTap: () {
+                    if (link != null) {
+                      launchUrl(Uri.parse(link));
+                    }
+                  },
+                ),
+              );
+            }).toList(),
           ),
       ],
     );
@@ -230,14 +172,9 @@ class _SearchPageState extends State<SearchPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('질문 검색 / 작성'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add_link),
-            tooltip: '📌 링크 추가하기',
-            onPressed: showAddPinnedDialog,
-          ),
-        ],
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        title: const Text('Search / Ask a Question'),
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -246,31 +183,24 @@ class _SearchPageState extends State<SearchPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Search / Ask bar
                   Row(
                     children: [
                       Expanded(
                         child: TextField(
                           controller: searchController,
                           decoration: const InputDecoration(
-                            hintText: '질문을 검색하거나 작성하세요...',
+                            hintText: 'Search for questions...',
                             border: OutlineInputBorder(),
                           ),
                         ),
                       ),
                       IconButton(
                         icon: const Icon(Icons.search),
-                        tooltip: '검색하기',
+                        tooltip: 'Search',
                         onPressed: onSearch,
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.send),
-                        tooltip: '질문 등록',
-                        onPressed: onAskQuestion,
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
                   buildPinnedLinksSection(),
                   buildResultsSection(),
                 ],

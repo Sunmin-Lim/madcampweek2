@@ -343,7 +343,8 @@ import 'api_service.dart';
 import 'session_page.dart';
 import 'warning_page.dart';
 import 'archive_page.dart';
-import 'global_scaffold.dart';
+import 'search_page.dart';
+import 'community_page.dart';
 
 class HomePage extends StatefulWidget {
   final String token;
@@ -415,7 +416,6 @@ class _HomePageState extends State<HomePage> {
 
   void cloneRepo() async {
     final repoUrl = repoUrlController.text.trim();
-
     if (repoUrl.isEmpty) {
       setState(() {
         message = 'Please enter a repository URL.';
@@ -514,197 +514,180 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return GlobalScaffold(
-      // ✅ wrap in GlobalScaffold
-      child: Scaffold(
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        title: const Text(
+          'clone git repository',
+          style: TextStyle(color: Colors.black),
+        ),
         backgroundColor: Colors.white,
-        body: SafeArea(
-          child: Center(
-            child: SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24.0,
-                  vertical: 16.0,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    // Top Bar
-                    Row(
-                      children: [
-                        IconButton(
-                          icon: const Icon(
-                            Icons.arrow_back,
-                            color: Colors.black,
-                          ),
-                          onPressed: () {
-                            Navigator.pop(context);
-                          },
-                        ),
-                        const SizedBox(width: 8),
-                        const Text(
-                          'clone git repository',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.black,
-                          ),
-                        ),
-                        const Spacer(),
-                        IconButton(
-                          icon: const Text(
-                            '⚠️',
-                            style: TextStyle(fontSize: 24),
-                          ),
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const WarningPage(),
-                              ),
-                            );
-                          },
-                        ),
-                      ],
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.black),
+        actions: [
+          IconButton(
+            icon: const Text('‼️', style: TextStyle(fontSize: 24)),
+            tooltip: 'Warnings',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const WarningPage()),
+              );
+            },
+          ),
+          IconButton(
+            icon: const Text('👥', style: TextStyle(fontSize: 24)),
+            tooltip: 'Community',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const CommunityPage()),
+              );
+            },
+          ),
+        ],
+      ),
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 24.0,
+                vertical: 16.0,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  whaleVideoWidget(),
+                  const SizedBox(height: 24),
+                  TextField(
+                    controller: repoUrlController,
+                    decoration: const InputDecoration(
+                      labelText: 'https://github.com/...',
+                      border: OutlineInputBorder(),
                     ),
-
-                    const SizedBox(height: 24),
-                    whaleVideoWidget(),
-                    const SizedBox(height: 24),
-
-                    TextField(
-                      controller: repoUrlController,
-                      decoration: const InputDecoration(
-                        labelText: 'https://github.com/...',
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: cloneRepo,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.lightBlue,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: const Text(
-                          'clone repository',
-                          style: TextStyle(fontSize: 16),
+                  ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: cloneRepo,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.lightBlue,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    if (message.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 8.0),
-                        child: Text(
-                          message,
-                          style: const TextStyle(
-                            color: Colors.red,
-                            fontSize: 14,
-                          ),
-                        ),
+                      child: const Text(
+                        'clone repository',
+                        style: TextStyle(fontSize: 16),
                       ),
-
-                    const SizedBox(height: 24),
-                    const Align(
-                      alignment: Alignment.centerLeft,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  if (message.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8.0),
                       child: Text(
-                        'cloned repositories',
-                        style: TextStyle(fontSize: 18),
+                        message,
+                        style: const TextStyle(color: Colors.red, fontSize: 14),
                       ),
                     ),
-
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      height: 300,
-                      child: isLoadingRepos
-                          ? const Center(child: CircularProgressIndicator())
-                          : clonedRepos.isEmpty
-                          ? const Center(
-                              child: Text('no repositories cloned yet.'),
-                            )
-                          : ListView.builder(
-                              itemCount: clonedRepos.length,
-                              itemBuilder: (context, index) {
-                                final url = clonedRepos[index];
-                                return Card(
-                                  margin: const EdgeInsets.symmetric(
-                                    vertical: 6,
-                                    horizontal: 4,
-                                  ),
-                                  child: ListTile(
-                                    title: Text(url),
-                                    trailing: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        IconButton(
-                                          icon: const Text(
-                                            '📦',
-                                            style: TextStyle(fontSize: 24),
-                                          ),
-                                          onPressed: () {
-                                            Navigator.push(
-                                              context,
-                                              MaterialPageRoute(
-                                                builder: (context) =>
-                                                    SessionPage(
-                                                      token: widget.token,
-                                                      repoUrl: url,
-                                                    ),
-                                              ),
-                                            );
-                                          },
-                                        ),
-                                        const SizedBox(width: 8),
-                                        IconButton(
-                                          icon: const Text(
-                                            '📨',
-                                            style: TextStyle(fontSize: 24),
-                                          ),
-                                          onPressed: () {
-                                            Navigator.push(
-                                              context,
-                                              MaterialPageRoute(
-                                                builder: (context) =>
-                                                    ArchivePage(
-                                                      token: widget.token,
-                                                      repoUrl: url,
-                                                    ),
-                                              ),
-                                            );
-                                          },
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
+                  const SizedBox(height: 24),
+                  const Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'cloned repositories',
+                      style: TextStyle(fontSize: 18),
                     ),
-
-                    const SizedBox(height: 24),
-                    Text(
-                      'BackOverFlow 2025',
-                      style: TextStyle(
-                        color: Colors.grey.shade500,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    height: 300,
+                    child: isLoadingRepos
+                        ? const Center(child: CircularProgressIndicator())
+                        : clonedRepos.isEmpty
+                        ? const Center(
+                            child: Text('no repositories cloned yet.'),
+                          )
+                        : ListView.builder(
+                            itemCount: clonedRepos.length,
+                            itemBuilder: (context, index) {
+                              final url = clonedRepos[index];
+                              return Card(
+                                margin: const EdgeInsets.symmetric(
+                                  vertical: 6,
+                                  horizontal: 4,
+                                ),
+                                child: ListTile(
+                                  title: Text(url),
+                                  trailing: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      IconButton(
+                                        icon: const Text(
+                                          '📦',
+                                          style: TextStyle(fontSize: 24),
+                                        ),
+                                        onPressed: () {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) => SessionPage(
+                                                token: widget.token,
+                                                repoUrl: url,
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                      const SizedBox(width: 8),
+                                      IconButton(
+                                        icon: const Text(
+                                          '📨',
+                                          style: TextStyle(fontSize: 24),
+                                        ),
+                                        onPressed: () {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) => ArchivePage(
+                                                token: widget.token,
+                                                repoUrl: url,
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    'BackOverFlow 2025',
+                    style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
+                  ),
+                ],
               ),
             ),
           ),
         ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        tooltip: 'Help / Search',
+        child: const Icon(Icons.help_outline),
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const SearchPage()),
+          );
+        },
       ),
     );
   }

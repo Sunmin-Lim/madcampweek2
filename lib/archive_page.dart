@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'search_page.dart';
 
 class ArchivePage extends StatelessWidget {
   final String token;
@@ -10,8 +11,9 @@ class ArchivePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Archive'),
-        backgroundColor: Colors.blueGrey,
+        title: const Text('Archive', style: TextStyle(color: Colors.black)),
+        backgroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.black),
       ),
       body: Center(
         child: Column(
@@ -34,6 +36,16 @@ class ArchivePage extends StatelessWidget {
             ),
           ],
         ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        tooltip: 'Help / Search',
+        child: const Icon(Icons.help_outline),
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const SearchPage()),
+          );
+        },
       ),
     );
   }
