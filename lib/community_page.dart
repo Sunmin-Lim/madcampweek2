@@ -29,10 +29,14 @@ class _CommunityPageState extends State<CommunityPage> {
   }
 
   void connectSocket() {
-    socket = IO.io('http://143.248.184.42:3000', <String, dynamic>{
-      'transports': ['websocket'],
-      'autoConnect': false,
-    });
+    socket = IO.io(
+      /*'http://143.248.184.42:3000'*/
+      'http://192.249.28.37:3000',
+      <String, dynamic>{
+        'transports': ['websocket'],
+        'autoConnect': false,
+      },
+    );
 
     socket.connect();
 

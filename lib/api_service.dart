@@ -4,7 +4,8 @@ import 'package:http/http.dart' as http;
 import 'package:madcampweek2/home_page.dart';
 
 class ApiService {
-  static const String serverIp = 'http://143.248.184.42:3000';
+  //static const String serverIp = 'http://143.248.184.42:3000';
+  static const String serverIp = 'http://192.249.28.37:3000';
 
   static const String authBase = '$serverIp/api/auth';
   static const String sessionBase = '$serverIp/api/session';
