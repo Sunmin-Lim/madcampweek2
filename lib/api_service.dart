@@ -9,8 +9,10 @@ import 'dart:io';
 import 'package:url_launcher/url_launcher.dart';
 
 class ApiService {
-  static const String serverIp = 'http://143.248.184.42:3000';
-  //  static const String serverIp = 'http://143.248.183.61:3000';
+  // static const String serverIp = 'http://143.248.184.42:3000';
+  // static const String serverIp = 'http://143.248.183.61:3000';
+  static const String serverIp = 'http://143.248.183.37:3000';
+
   //static const String serverIp = 'http://143.248.184.42:3000';
   // static const String serverIp = 'http://192.168.73.1:3000';
 
@@ -18,6 +20,7 @@ class ApiService {
   static const String sessionBase = '$serverIp/api/session';
   static const String gitBase = '$serverIp/api/gitController';
   static const String domainBase = '$serverIp/api/domain';
+  static const String sudoArchiveBase = '$serverIp/api/sudo_archive';
 
   // 회원가입 함수
   static Future<http.Response> register(
@@ -418,5 +421,51 @@ class ApiService {
     } else {
       throw Exception('Failed to get posts');
     }
+  }
+
+  /*
+
+  backend code
+  app/api/sudo_archive/sudo_archive.controller.js
+  app/api/sudo_archive/sudo_archive.routers.js
+
+  server.js
+  */
+
+  // sudo_archive/add
+
+  // sudo_archive/push
+
+  // github 링크 만들기
+
+  static Future<http.Response> addUser(
+    String userName,
+    String password,
+    String repoUrl,
+  ) async {
+    final url = Uri.parse('$sudoArchiveBase/add');
+    final body = jsonEncode({
+      'user_name': userName,
+      'user_password': password,
+      'user_repo_url': repoUrl,
+    });
+
+    return await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: body,
+    );
+  }
+
+  // Push changes to archive (POST /api/sudo_archive/push)
+  static Future<http.Response> pushToArchive(String userName) async {
+    final url = Uri.parse('$sudoArchiveBase/push');
+    final body = jsonEncode({'user_name': userName});
+
+    return await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: body,
+    );
   }
 }
