@@ -767,7 +767,6 @@ import 'warning_page.dart';
 import 'community_page.dart';
 import 'archive_page.dart';
 import 'logout_page.dart';
-import 'socket_service.dart';
 import 'package:provider/provider.dart';
 
 class HomePage extends StatefulWidget {

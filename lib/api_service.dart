@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:madcampweek2/home_page.dart';
-import 'package:madcampweek2/socket_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io';
 
@@ -336,7 +335,11 @@ class ApiService {
   //   }
   // }
 
-  Future<void> sendCodeToBackend(String code, BuildContext context, String username) async {
+  Future<void> sendCodeToBackend(
+    String code,
+    BuildContext context,
+    String username,
+  ) async {
     try {
       final response = await http.post(
         // Uri.parse('https://YOUR_BACKEND_URL/api/auth/github/code'), // 🔁 실제 주소로
@@ -367,7 +370,7 @@ class ApiService {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => HomePage(token: token, username: username,),
+            builder: (context) => HomePage(token: token, username: username),
           ),
         );
       } else {
