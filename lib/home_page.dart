@@ -487,6 +487,11 @@ class _HomePageState extends State<HomePage> {
         });
         _setWhaleState(WhaleState.idle);
 
+        // ✅ 새로고침 추가
+        if (userId != null) {
+          await fetchClonedRepos(userId!);
+        }
+
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -495,6 +500,11 @@ class _HomePageState extends State<HomePage> {
           ),
         ).then((_) {
           _setWhaleState(WhaleState.idle);
+
+          // ✅ 다시 새로고침 (돌아왔을 때도 반영)
+          if (userId != null) {
+            fetchClonedRepos(userId!);
+          }
         });
       } else {
         setState(() {
