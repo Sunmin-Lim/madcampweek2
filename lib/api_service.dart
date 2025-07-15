@@ -54,6 +54,18 @@ class ApiService {
     );
   }
 
+  static Future<http.Response> logout(String token) async {
+    final url = Uri.parse('$authBase/logout');
+
+    return await http.post(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token', // ✅ 핵심!
+      },
+    );
+  }
+
   /*
   static Future<http.Response> getSession(String token, String userId) async {
     final url = Uri.parse(
@@ -156,11 +168,13 @@ class ApiService {
     }
   }
 
+  // api 수정해주기
   static Future<http.Response> dockerBuild(
     String token,
     String userId, // user_id 추가
     String localPath,
     String imageName,
+    String repo_url,
   ) async {
     final url = Uri.parse('$sessionBase/build'); // 실제 API URL
 
@@ -173,6 +187,7 @@ class ApiService {
       'user_id': userId, // user_id를 본문에 포함
       'localPath': localPath, // localPath 포함
       'imageName': imageName, // imageName 포함
+      'repo_url': repo_url, // repo_url 포함
     });
 
     try {
@@ -288,10 +303,11 @@ class ApiService {
   }
 
   static Future<http.Response> removeContainer(
-    String containerId,
     String token,
+    String containerId,
+    String sessionId,
   ) async {
-    final url = Uri.parse('$sessionBase/remove/$containerId');
+    final url = Uri.parse('$sessionBase/remove/$containerId/$sessionId');
 
     final headers = {
       'Content-Type': 'application/json',

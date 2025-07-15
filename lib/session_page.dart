@@ -346,6 +346,502 @@
 //   }
 // }
 
+// import 'dart:async';
+// import 'dart:convert';
+// import 'package:flutter/material.dart';
+// import 'api_service.dart';
+
+// class SessionPage extends StatefulWidget {
+//   final String token;
+//   final String repoUrl;
+
+//   const SessionPage({super.key, required this.token, required this.repoUrl});
+
+//   @override
+//   _SessionPageState createState() => _SessionPageState();
+// }
+
+// enum WhaleState { idle, building, running, stopping, deleting }
+
+// class _SessionPageState extends State<SessionPage> {
+//   String message = '';
+//   bool isLoading = true;
+//   late String userId;
+//   late String username;
+//   late String localPath;
+
+//   // String basePath =
+//   //     '/Users/imsnmn/madcampweek2-backend/F:/workspace/server_manage/home';
+
+//   String basePath =
+//       '/home/hanjeongjin/Workspace_ubuntu/backend/madcampweek2-backend/F:/workspace/server_manage/home';
+//   String imageName = 'custom-image-name';
+
+//   final cpuController = TextEditingController(text: '0.5');
+//   double cpuSliderValue = 0.5;
+
+//   final memoryController = TextEditingController(text: '200MB');
+//   final portController = TextEditingController(text: '8080:80');
+
+//   WhaleState whaleState = WhaleState.idle;
+
+//   // Animation state
+//   bool hasBox = false;
+//   bool showBeach = false;
+//   bool boxOpen = false;
+//   bool confettiVisible = false;
+//   double whalePosition = 0.0;
+//   double boxSize = 24;
+
+//   // Confetti animation
+//   double confettiScale = 1.0;
+//   double confettiOpacity = 1.0;
+//   double confettiOffsetY = 0.0;
+
+//   // Whale movement
+//   Timer? whaleMoveTimer;
+
+//   @override
+//   void initState() {
+//     super.initState();
+//     getUserInfo();
+//     startWhaleAnimation();
+//   }
+
+//   @override
+//   void dispose() {
+//     whaleMoveTimer?.cancel();
+//     super.dispose();
+//   }
+
+//   void startWhaleAnimation() {
+//     whaleMoveTimer?.cancel();
+//     whaleMoveTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+//       if (!mounted) return;
+//       setState(() {
+//         if (whalePosition >= 0.9) {
+//           whalePosition = -0.9;
+//         } else {
+//           whalePosition += 0.45;
+//         }
+//       });
+//     });
+//   }
+
+//   Widget whaleAndBox() {
+//     String boxEmoji = boxOpen ? '📤' : '📦';
+
+//     return Row(
+//       mainAxisSize: MainAxisSize.min,
+//       children: [
+//         if (hasBox) Text(boxEmoji, style: TextStyle(fontSize: boxSize)),
+//         if (hasBox) const SizedBox(width: 6),
+//         SizedBox(
+//           width: 80,
+//           height: 80,
+//           child: Image.asset(
+//             'assets/images/com-effects-unscreen.gif',
+//             fit: BoxFit.contain,
+//           ),
+//         ),
+//       ],
+//     );
+//   }
+
+//   Widget whaleWidget() {
+//     return ClipRRect(
+//       borderRadius: BorderRadius.circular(16),
+//       child: Container(
+//         height: 200,
+//         width: double.infinity,
+//         child: Stack(
+//           children: [
+//             Container(
+//               decoration: BoxDecoration(
+//                 gradient: LinearGradient(
+//                   colors: [Colors.lightBlue.shade200, Colors.blue.shade800],
+//                   begin: Alignment.topCenter,
+//                   end: Alignment.bottomCenter,
+//                 ),
+//               ),
+//             ),
+//             AnimatedOpacity(
+//               opacity: showBeach ? 1.0 : 0.0,
+//               duration: const Duration(milliseconds: 500),
+//               child: Align(
+//                 alignment: Alignment.centerLeft,
+//                 child: Padding(
+//                   padding: const EdgeInsets.only(left: 12.0),
+//                   child: Text('🏝️', style: const TextStyle(fontSize: 80)),
+//                 ),
+//               ),
+//             ),
+//             if (confettiVisible)
+//               Align(
+//                 alignment: Alignment(0, -0.5 + confettiOffsetY),
+//                 child: Opacity(
+//                   opacity: confettiOpacity,
+//                   child: Transform.scale(
+//                     scale: confettiScale,
+//                     child: Text(
+//                       '🎉🎊🎉🎊',
+//                       style: const TextStyle(fontSize: 32),
+//                     ),
+//                   ),
+//                 ),
+//               ),
+//             AnimatedAlign(
+//               alignment: Alignment(whalePosition, 0.4),
+//               duration: const Duration(seconds: 2),
+//               curve: Curves.easeInOut,
+//               child: whaleAndBox(),
+//             ),
+//           ],
+//         ),
+//       ),
+//     );
+//   }
+
+//   Future<void> getUserInfo() async {
+//     try {
+//       final response = await ApiService.getUserId(widget.token);
+//       if (!mounted) return;
+//       if (response.statusCode == 200) {
+//         final userData = jsonDecode(response.body);
+//         setState(() {
+//           userId = userData['userId'];
+//           username = userData['username'];
+//           localPath =
+//               '$basePath/$username/${widget.repoUrl.split('/').last.replaceAll('.git', '')}';
+//           isLoading = false;
+//         });
+//       } else {
+//         setState(() {
+//           message = 'Error: ${response.body}';
+//           isLoading = false;
+//         });
+//       }
+//     } catch (e) {
+//       if (!mounted) return;
+//       setState(() {
+//         message = 'Error retrieving user info: $e';
+//         isLoading = false;
+//       });
+//     }
+//   }
+
+//   Future<void> buildDockerContainer() async {
+//     if (isLoading) return;
+//     setWhaleState(WhaleState.building);
+//     setState(() {
+//       message = 'Docker 빌드 중...';
+//       hasBox = false;
+//       whalePosition = 0;
+//       showBeach = true;
+//       boxOpen = false;
+//       confettiVisible = false;
+//       boxSize = 24;
+//     });
+
+//     await Future.delayed(const Duration(milliseconds: 500));
+//     if (!mounted) return;
+//     setState(() {
+//       whalePosition = -1;
+//     });
+
+//     await Future.delayed(const Duration(seconds: 1));
+//     final success = await fakeBuildResult();
+//     if (!mounted) return;
+
+//     if (success) {
+//       setState(() {
+//         hasBox = true;
+//         whalePosition = 0;
+//         boxSize = 60;
+//         message = 'Docker 빌드 성공!';
+//       });
+//     } else {
+//       setState(() {
+//         hasBox = false;
+//         whalePosition = 0;
+//         message = 'Docker 빌드 실패!';
+//       });
+//     }
+
+//     await Future.delayed(const Duration(seconds: 1));
+//     if (!mounted) return;
+//     setState(() {
+//       showBeach = false;
+//     });
+
+//     setWhaleState(WhaleState.idle);
+//   }
+
+//   Future<void> runDockerContainer() async {
+//     if (isLoading) return;
+//     setWhaleState(WhaleState.running);
+//     setState(() {
+//       message = '컨테이너 실행 중...';
+//       whalePosition = 0;
+//       hasBox = true;
+//       boxOpen = false;
+//       confettiVisible = false;
+//       boxSize = 24;
+//     });
+
+//     await Future.delayed(const Duration(seconds: 1));
+//     final success = await fakeRunResult();
+
+//     if (!mounted) return;
+//     setState(() {
+//       if (success) {
+//         boxOpen = true;
+//         confettiVisible = true;
+//         confettiScale = 1.0;
+//         confettiOpacity = 1.0;
+//         confettiOffsetY = 0.0;
+//         boxSize = 60;
+//         message = '컨테이너 실행 성공!';
+//       } else {
+//         boxOpen = false;
+//         confettiVisible = false;
+//         boxSize = 24;
+//         message = '컨테이너 실행 실패!';
+//       }
+//     });
+//   }
+
+//   void stopContainer() async {
+//     if (isLoading) return;
+//     setWhaleState(WhaleState.stopping);
+//     setState(() {
+//       message = 'Stop 진행 중...';
+//       whalePosition = 0;
+//     });
+
+//     if (confettiVisible) {
+//       Timer.periodic(const Duration(milliseconds: 50), (timer) {
+//         if (!mounted) {
+//           timer.cancel();
+//           return;
+//         }
+//         setState(() {
+//           confettiScale -= 0.05;
+//           confettiOpacity -= 0.07;
+//           confettiOffsetY += 0.05;
+//         });
+//         if (confettiScale <= 0 || confettiOpacity <= 0) {
+//           timer.cancel();
+//           if (!mounted) return;
+//           setState(() {
+//             confettiVisible = false;
+//             confettiScale = 1.0;
+//             confettiOpacity = 1.0;
+//             confettiOffsetY = 0.0;
+//             boxOpen = false;
+//             hasBox = true;
+//             boxSize = 24;
+//             message = 'Stop 완료!';
+//             whaleState = WhaleState.idle;
+//           });
+//         }
+//       });
+//     } else {
+//       await Future.delayed(const Duration(seconds: 2));
+//       if (!mounted) return;
+//       setState(() {
+//         message = 'Stop 완료!';
+//         whaleState = WhaleState.idle;
+//         boxOpen = false;
+//         confettiVisible = false;
+//         hasBox = true;
+//         boxSize = 24;
+//       });
+//     }
+//   }
+
+//   void removeDockerContainer() async {
+//     if (isLoading) return;
+//     setWhaleState(WhaleState.deleting);
+//     setState(() {
+//       message = '컨테이너 삭제 중...';
+//       whalePosition = 0;
+//       showBeach = true;
+//       boxOpen = false;
+//       confettiVisible = false;
+//     });
+
+//     await Future.delayed(const Duration(milliseconds: 500));
+//     if (!mounted) return;
+//     setState(() {
+//       whalePosition = -1;
+//     });
+
+//     await Future.delayed(const Duration(seconds: 1));
+//     if (!mounted) return;
+//     setState(() {
+//       hasBox = false;
+//       whalePosition = 0;
+//       message = '삭제 완료!';
+//     });
+
+//     await Future.delayed(const Duration(seconds: 1));
+//     if (!mounted) return;
+//     setState(() {
+//       showBeach = false;
+//     });
+
+//     setWhaleState(WhaleState.idle);
+//   }
+
+//   Future<bool> fakeBuildResult() async {
+//     await Future.delayed(const Duration(seconds: 1));
+//     return true;
+//   }
+
+//   Future<bool> fakeRunResult() async {
+//     await Future.delayed(const Duration(seconds: 1));
+//     return true;
+//   }
+
+//   void setWhaleState(WhaleState newState) {
+//     setState(() {
+//       whaleState = newState;
+//     });
+//   }
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return Scaffold(
+//       appBar: AppBar(
+//         title: const Text(
+//           'Docker Container',
+//           style: TextStyle(color: Colors.black),
+//         ),
+//         backgroundColor: Colors.white,
+//         elevation: 0,
+//         iconTheme: const IconThemeData(color: Colors.black),
+//       ),
+//       backgroundColor: Colors.white,
+//       body: isLoading
+//           ? const Center(child: CircularProgressIndicator())
+//           : Padding(
+//               padding: const EdgeInsets.all(16),
+//               child: SingleChildScrollView(
+//                 child: Column(
+//                   crossAxisAlignment: CrossAxisAlignment.center,
+//                   children: [
+//                     const SizedBox(height: 16),
+//                     whaleWidget(),
+//                     const SizedBox(height: 32),
+
+//                     Column(
+//                       crossAxisAlignment: CrossAxisAlignment.start,
+//                       children: [
+//                         const Text('CPU'),
+//                         Row(
+//                           children: [
+//                             const Text('🐢'),
+//                             Expanded(
+//                               child: Slider(
+//                                 value: cpuSliderValue,
+//                                 min: 0.1,
+//                                 max: 2.0,
+//                                 divisions: 19,
+//                                 label:
+//                                     '${cpuSliderValue.toStringAsFixed(2)} vCPU',
+//                                 onChanged: (newValue) {
+//                                   setState(() {
+//                                     cpuSliderValue = newValue;
+//                                     cpuController.text = cpuSliderValue
+//                                         .toStringAsFixed(2);
+//                                   });
+//                                 },
+//                               ),
+//                             ),
+//                             const Text('🐇'),
+//                           ],
+//                         ),
+//                         const SizedBox(height: 16),
+//                         Row(
+//                           children: [
+//                             Expanded(
+//                               child: TextField(
+//                                 controller: memoryController,
+//                                 decoration: const InputDecoration(
+//                                   labelText: 'Memory',
+//                                   border: OutlineInputBorder(),
+//                                 ),
+//                               ),
+//                             ),
+//                             const SizedBox(width: 8),
+//                             Expanded(
+//                               child: TextField(
+//                                 controller: portController,
+//                                 decoration: const InputDecoration(
+//                                   labelText: 'Port',
+//                                   border: OutlineInputBorder(),
+//                                 ),
+//                               ),
+//                             ),
+//                           ],
+//                         ),
+//                       ],
+//                     ),
+
+//                     const SizedBox(height: 32),
+
+//                     _buildButton(
+//                       'Build',
+//                       Colors.blue.shade300,
+//                       buildDockerContainer,
+//                     ),
+//                     _buildButton(
+//                       'Run',
+//                       Colors.blue.shade400,
+//                       runDockerContainer,
+//                     ),
+//                     _buildButton('Stop', Colors.blue.shade500, stopContainer),
+//                     _buildButton(
+//                       'Delete',
+//                       Colors.blue.shade600,
+//                       removeDockerContainer,
+//                     ),
+
+//                     const SizedBox(height: 24),
+//                     Text(
+//                       message,
+//                       style: const TextStyle(fontSize: 16, color: Colors.black),
+//                     ),
+//                     Text(
+//                       'BackOverFlow 2025',
+//                       style: TextStyle(color: Colors.grey, fontSize: 12),
+//                     ),
+//                   ],
+//                 ),
+//               ),
+//             ),
+//     );
+//   }
+
+//   Widget _buildButton(String label, Color color, VoidCallback onPressed) {
+//     return Padding(
+//       padding: const EdgeInsets.symmetric(vertical: 6),
+//       child: SizedBox(
+//         width: double.infinity,
+//         child: ElevatedButton(
+//           onPressed: onPressed,
+//           style: ElevatedButton.styleFrom(
+//             backgroundColor: color,
+//             padding: const EdgeInsets.symmetric(vertical: 16),
+//           ),
+//           child: Text(label),
+//         ),
+//       ),
+//     );
+//   }
+// }
+
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
@@ -369,10 +865,11 @@ class _SessionPageState extends State<SessionPage> {
   late String userId;
   late String username;
   late String localPath;
+  late String repo_url;
 
   String basePath =
-      '/Users/imsnmn/madcampweek2-backend/F:/workspace/server_manage/home';
-  String imageName = 'custom-image-name';
+      '/home/hanjeongjin/Workspace_ubuntu/backend/madcampweek2-backend/F:/workspace/server_manage/home';
+  late String imageName;
 
   final cpuController = TextEditingController(text: '0.5');
   double cpuSliderValue = 0.5;
@@ -382,7 +879,6 @@ class _SessionPageState extends State<SessionPage> {
 
   WhaleState whaleState = WhaleState.idle;
 
-  // Animation state
   bool hasBox = false;
   bool showBeach = false;
   bool boxOpen = false;
@@ -390,12 +886,10 @@ class _SessionPageState extends State<SessionPage> {
   double whalePosition = 0.0;
   double boxSize = 24;
 
-  // Confetti animation
   double confettiScale = 1.0;
   double confettiOpacity = 1.0;
   double confettiOffsetY = 0.0;
 
-  // Whale movement
   Timer? whaleMoveTimer;
 
   @override
@@ -416,12 +910,273 @@ class _SessionPageState extends State<SessionPage> {
     whaleMoveTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (!mounted) return;
       setState(() {
-        if (whalePosition >= 0.9) {
-          whalePosition = -0.9;
-        } else {
-          whalePosition += 0.45;
-        }
+        whalePosition = whalePosition >= 0.9 ? -0.9 : whalePosition + 0.45;
       });
+    });
+  }
+
+  Future<void> getUserInfo() async {
+    try {
+      final response = await ApiService.getUserId(widget.token);
+      if (!mounted) return;
+      if (response.statusCode == 200) {
+        final userData = jsonDecode(response.body);
+        setState(() {
+          userId = userData['userId'];
+          username = userData['username'];
+          localPath =
+              '$basePath/$username/${widget.repoUrl.split('/').last.replaceAll('.git', '')}';
+          repo_url = widget.repoUrl;
+          imageName = '${username}-${DateTime.now().millisecondsSinceEpoch}';
+          isLoading = false;
+        });
+      } else {
+        setState(() {
+          message = 'Error: ${response.body}';
+          isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        message = 'Error retrieving user info: $e';
+        isLoading = false;
+      });
+    }
+  }
+
+  Future<void> buildDockerContainer() async {
+    if (isLoading) return;
+    setWhaleState(WhaleState.building);
+    setState(() {
+      message = 'Docker 빌드 중...';
+      hasBox = false;
+      whalePosition = 0;
+      showBeach = true;
+      boxOpen = false;
+      confettiVisible = false;
+      boxSize = 24;
+    });
+
+    await Future.delayed(const Duration(milliseconds: 500));
+    if (!mounted) return;
+    setState(() {
+      whalePosition = -1;
+    });
+
+    await Future.delayed(const Duration(seconds: 1));
+    try {
+      final response = await ApiService.dockerBuild(
+        widget.token,
+        userId,
+        localPath,
+        imageName,
+        repo_url,
+      );
+
+      if (!mounted) return;
+      if (response.statusCode == 200) {
+        setState(() {
+          hasBox = true;
+          whalePosition = 0;
+          boxSize = 60;
+          message = 'Docker 빌드 성공!';
+        });
+      } else {
+        setState(() {
+          hasBox = false;
+          whalePosition = 0;
+          message = 'Docker 빌드 실패: ${response.body}';
+        });
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        message = 'Docker 빌드 중 오류 발생: $e';
+      });
+    }
+
+    await Future.delayed(const Duration(seconds: 1));
+    if (!mounted) return;
+    setState(() {
+      showBeach = false;
+    });
+
+    setWhaleState(WhaleState.idle);
+  }
+
+  Future<void> runDockerContainer() async {
+    if (isLoading) return;
+    setWhaleState(WhaleState.running);
+    setState(() {
+      message = '컨테이너 실행 중...';
+      whalePosition = 0;
+      hasBox = true;
+      boxOpen = false;
+      confettiVisible = false;
+      boxSize = 24;
+    });
+
+    await Future.delayed(const Duration(seconds: 1));
+
+    try {
+      final sessionResponse = await ApiService.getSession(widget.token, userId);
+      if (sessionResponse.statusCode == 200) {
+        final sessionData = jsonDecode(sessionResponse.body);
+        final sessionId = sessionData[0]['_id'];
+
+        final response = await ApiService.dockerRun(
+          widget.token,
+          sessionId,
+          cpuController.text,
+          memoryController.text,
+          portController.text,
+        );
+
+        if (!mounted) return;
+        if (response.statusCode == 200) {
+          final responseData = jsonDecode(response.body);
+          String mappedPort = responseData['port'];
+          String fullUrl = 'http://143.248.183.37:$mappedPort';
+
+          setState(() {
+            boxOpen = true;
+            confettiVisible = true;
+            confettiScale = 1.0;
+            confettiOpacity = 1.0;
+            confettiOffsetY = 0.0;
+            boxSize = 60;
+            message = 'Docker 실행 성공! $fullUrl';
+          });
+        } else {
+          setState(() {
+            message = 'Docker 실행 실패: ${response.body}';
+          });
+        }
+      } else {
+        setState(() {
+          message = '세션 조회 실패: ${sessionResponse.body}';
+        });
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        message = '컨테이너 실행 중 오류 발생: $e';
+      });
+    }
+  }
+
+  void stopContainer() async {
+    if (isLoading) return;
+    setWhaleState(WhaleState.stopping);
+    setState(() {
+      message = 'Stop 진행 중...';
+      whalePosition = 0;
+    });
+
+    try {
+      final sessionResponse = await ApiService.getSession(widget.token, userId);
+      if (sessionResponse.statusCode == 200) {
+        final sessionData = jsonDecode(sessionResponse.body);
+        final sessionId = sessionData[0]['_id'];
+        final containerId = sessionData[0]['container_id'];
+
+        final stopResponse = await ApiService.stopContainer(
+          widget.token,
+          containerId,
+          sessionId,
+        );
+
+        if (!mounted) return;
+        if (stopResponse.statusCode == 200) {
+          setState(() {
+            confettiVisible = false;
+            boxOpen = false;
+            hasBox = true;
+            boxSize = 24;
+            message = '컨테이너 중지 성공!';
+            whaleState = WhaleState.idle;
+          });
+        } else {
+          setState(() {
+            message = '중지 실패: ${stopResponse.body}';
+          });
+        }
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        message = '중지 중 오류 발생: $e';
+      });
+    }
+  }
+
+  void removeDockerContainer() async {
+    if (isLoading) return;
+    setWhaleState(WhaleState.deleting);
+    setState(() {
+      message = '컨테이너 삭제 중...';
+      whalePosition = 0;
+      showBeach = true;
+      boxOpen = false;
+      confettiVisible = false;
+    });
+
+    await Future.delayed(const Duration(milliseconds: 500));
+    setState(() {
+      whalePosition = -1;
+    });
+
+    await Future.delayed(const Duration(seconds: 1));
+
+    try {
+      final sessionResponse = await ApiService.getSession(widget.token, userId);
+      if (sessionResponse.statusCode == 200) {
+        final sessionData = jsonDecode(sessionResponse.body);
+        final containerId = sessionData[0]['container_id'];
+        final sessionId = sessionData[0]['_id'];
+
+        final response = await ApiService.removeContainer(
+          widget.token,
+          containerId,
+          sessionId,
+        );
+
+        if (!mounted) return;
+        if (response.statusCode == 200) {
+          setState(() {
+            hasBox = false;
+            whalePosition = 0;
+            message = '삭제 완료!';
+          });
+        } else {
+          setState(() {
+            message = '삭제 실패: ${response.body}';
+          });
+        }
+      } else {
+        setState(() {
+          message = '세션 조회 실패: ${sessionResponse.body}';
+        });
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        message = '삭제 중 오류 발생: $e';
+      });
+    }
+
+    await Future.delayed(const Duration(seconds: 1));
+    setState(() {
+      showBeach = false;
+    });
+
+    setWhaleState(WhaleState.idle);
+  }
+
+  void setWhaleState(WhaleState newState) {
+    setState(() {
+      whaleState = newState;
     });
   }
 
@@ -499,214 +1254,6 @@ class _SessionPageState extends State<SessionPage> {
     );
   }
 
-  Future<void> getUserInfo() async {
-    try {
-      final response = await ApiService.getUserId(widget.token);
-      if (!mounted) return;
-      if (response.statusCode == 200) {
-        final userData = jsonDecode(response.body);
-        setState(() {
-          userId = userData['userId'];
-          username = userData['username'];
-          localPath =
-              '$basePath/$username/${widget.repoUrl.split('/').last.replaceAll('.git', '')}';
-          isLoading = false;
-        });
-      } else {
-        setState(() {
-          message = 'Error: ${response.body}';
-          isLoading = false;
-        });
-      }
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        message = 'Error retrieving user info: $e';
-        isLoading = false;
-      });
-    }
-  }
-
-  Future<void> buildDockerContainer() async {
-    if (isLoading) return;
-    setWhaleState(WhaleState.building);
-    setState(() {
-      message = 'Docker 빌드 중...';
-      hasBox = false;
-      whalePosition = 0;
-      showBeach = true;
-      boxOpen = false;
-      confettiVisible = false;
-      boxSize = 24;
-    });
-
-    await Future.delayed(const Duration(milliseconds: 500));
-    if (!mounted) return;
-    setState(() {
-      whalePosition = -1;
-    });
-
-    await Future.delayed(const Duration(seconds: 1));
-    final success = await fakeBuildResult();
-    if (!mounted) return;
-
-    if (success) {
-      setState(() {
-        hasBox = true;
-        whalePosition = 0;
-        boxSize = 60;
-        message = 'Docker 빌드 성공!';
-      });
-    } else {
-      setState(() {
-        hasBox = false;
-        whalePosition = 0;
-        message = 'Docker 빌드 실패!';
-      });
-    }
-
-    await Future.delayed(const Duration(seconds: 1));
-    if (!mounted) return;
-    setState(() {
-      showBeach = false;
-    });
-
-    setWhaleState(WhaleState.idle);
-  }
-
-  Future<void> runDockerContainer() async {
-    if (isLoading) return;
-    setWhaleState(WhaleState.running);
-    setState(() {
-      message = '컨테이너 실행 중...';
-      whalePosition = 0;
-      hasBox = true;
-      boxOpen = false;
-      confettiVisible = false;
-      boxSize = 24;
-    });
-
-    await Future.delayed(const Duration(seconds: 1));
-    final success = await fakeRunResult();
-
-    if (!mounted) return;
-    setState(() {
-      if (success) {
-        boxOpen = true;
-        confettiVisible = true;
-        confettiScale = 1.0;
-        confettiOpacity = 1.0;
-        confettiOffsetY = 0.0;
-        boxSize = 60;
-        message = '컨테이너 실행 성공!';
-      } else {
-        boxOpen = false;
-        confettiVisible = false;
-        boxSize = 24;
-        message = '컨테이너 실행 실패!';
-      }
-    });
-  }
-
-  void stopContainer() async {
-    if (isLoading) return;
-    setWhaleState(WhaleState.stopping);
-    setState(() {
-      message = 'Stop 진행 중...';
-      whalePosition = 0;
-    });
-
-    if (confettiVisible) {
-      Timer.periodic(const Duration(milliseconds: 50), (timer) {
-        if (!mounted) {
-          timer.cancel();
-          return;
-        }
-        setState(() {
-          confettiScale -= 0.05;
-          confettiOpacity -= 0.07;
-          confettiOffsetY += 0.05;
-        });
-        if (confettiScale <= 0 || confettiOpacity <= 0) {
-          timer.cancel();
-          if (!mounted) return;
-          setState(() {
-            confettiVisible = false;
-            confettiScale = 1.0;
-            confettiOpacity = 1.0;
-            confettiOffsetY = 0.0;
-            boxOpen = false;
-            hasBox = true;
-            boxSize = 24;
-            message = 'Stop 완료!';
-            whaleState = WhaleState.idle;
-          });
-        }
-      });
-    } else {
-      await Future.delayed(const Duration(seconds: 2));
-      if (!mounted) return;
-      setState(() {
-        message = 'Stop 완료!';
-        whaleState = WhaleState.idle;
-        boxOpen = false;
-        confettiVisible = false;
-        hasBox = true;
-        boxSize = 24;
-      });
-    }
-  }
-
-  void removeDockerContainer() async {
-    if (isLoading) return;
-    setWhaleState(WhaleState.deleting);
-    setState(() {
-      message = '컨테이너 삭제 중...';
-      whalePosition = 0;
-      showBeach = true;
-      boxOpen = false;
-      confettiVisible = false;
-    });
-
-    await Future.delayed(const Duration(milliseconds: 500));
-    if (!mounted) return;
-    setState(() {
-      whalePosition = -1;
-    });
-
-    await Future.delayed(const Duration(seconds: 1));
-    if (!mounted) return;
-    setState(() {
-      hasBox = false;
-      whalePosition = 0;
-      message = '삭제 완료!';
-    });
-
-    await Future.delayed(const Duration(seconds: 1));
-    if (!mounted) return;
-    setState(() {
-      showBeach = false;
-    });
-
-    setWhaleState(WhaleState.idle);
-  }
-
-  Future<bool> fakeBuildResult() async {
-    await Future.delayed(const Duration(seconds: 1));
-    return true;
-  }
-
-  Future<bool> fakeRunResult() async {
-    await Future.delayed(const Duration(seconds: 1));
-    return true;
-  }
-
-  void setWhaleState(WhaleState newState) {
-    setState(() {
-      whaleState = newState;
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -731,7 +1278,6 @@ class _SessionPageState extends State<SessionPage> {
                     const SizedBox(height: 16),
                     whaleWidget(),
                     const SizedBox(height: 32),
-
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -785,9 +1331,7 @@ class _SessionPageState extends State<SessionPage> {
                         ),
                       ],
                     ),
-
                     const SizedBox(height: 32),
-
                     _buildButton(
                       'Build',
                       Colors.blue.shade300,
@@ -804,7 +1348,6 @@ class _SessionPageState extends State<SessionPage> {
                       Colors.blue.shade600,
                       removeDockerContainer,
                     ),
-
                     const SizedBox(height: 24),
                     Text(
                       message,

@@ -9,6 +9,7 @@ import 'package:video_player/video_player.dart';
 import 'api_service.dart';
 import 'register_page.dart';
 import 'home_page.dart';
+import 'socket_service.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -96,6 +97,70 @@ class _LoginPageState extends State<LoginPage> {
     } else {
       setState(() {
         message = jsonDecode(response.body)['message'];
+      });
+    }
+  }
+
+  // void login() async {
+  //   final response = await ApiService.login(
+  //     emailController.text,
+  //     passwordController.text,
+  //   );
+
+  //   if (response.statusCode == 200) {
+  //     final data = jsonDecode(response.body);
+  //     final token = data['token'];
+
+  //     // token을 통해 사용자 ID를 가져옴
+  //     final userResponse = await ApiService.getUserId(token);
+  //     if (userResponse.statusCode == 200) {
+  //       final userData = jsonDecode(userResponse.body);
+  //       final userId = userData['id']; // 여기서 userId를 가져옵니다
+
+  //       setState(() {
+  //         message = '로그인 성공! 토큰: $token';
+  //       });
+
+  //       final socketService = SocketService();
+  //       socketService.connect(userId); // userId로 소켓 연결
+
+  //       Navigator.pushReplacement(
+  //         context,
+  //         MaterialPageRoute(
+  //           builder: (context) => HomePage(
+  //             token: token,
+  //             socketService: socketService,
+  //             userId: userId,
+  //           ),
+  //         ),
+  //       );
+  //     } else {
+  //       setState(() {
+  //         message = '사용자 ID 가져오기 실패';
+  //       });
+  //     }
+  //   } else {
+  //     setState(() {
+  //       message = jsonDecode(response.body)['message'];
+  //     });
+  //   }
+  // }
+
+  String? token;
+
+  void logout() async {
+    if (token == null) return;
+
+    final response = await ApiService.logout(token!);
+
+    if (response.statusCode == 200) {
+      setState(() {
+        token = null;
+        message = '로그아웃 되었습니다.';
+      });
+    } else {
+      setState(() {
+        message = jsonDecode(response.body)['message'] ?? '로그아웃 실패';
       });
     }
   }
@@ -290,7 +355,7 @@ class _LoginPageState extends State<LoginPage> {
                   const SizedBox(height: 24),
 
                   Text(
-                    'WhaleDev 2025',
+                    'BackOverFlow 2025',
                     style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
                   ),
                 ],
