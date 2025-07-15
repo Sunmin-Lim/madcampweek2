@@ -264,4 +264,17 @@ class ApiService {
       throw Exception('Failed to crawl and get Google results');
     }
   }
+
+  static Future<List<dynamic>> fetchCommunityUsers(String token) async {
+    final response = await http.get(
+      Uri.parse('$serverIp/api/community/people'),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Failed to load users');
+    }
+  }
 }

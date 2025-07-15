@@ -339,6 +339,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
+
 import 'api_service.dart';
 import 'session_page.dart';
 import 'warning_page.dart';
@@ -363,6 +364,7 @@ class _HomePageState extends State<HomePage> {
   List<dynamic> clonedRepos = [];
   bool isLoadingRepos = true;
   WhaleState whaleState = WhaleState.idle;
+  String? userId;
 
   late VideoPlayerController _videoController;
   bool _videoInitialized = false;
@@ -370,8 +372,59 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    fetchClonedRepos();
+    loadUserIdAndRepos();
     _initializeVideo();
+  }
+
+  Future<void> loadUserIdAndRepos() async {
+    setState(() {
+      isLoadingRepos = true;
+    });
+
+    try {
+      final response = await ApiService.getUserId(widget.token);
+      if (response.statusCode == 200) {
+        final userData = jsonDecode(response.body);
+        setState(() {
+          userId = userData['userId'];
+        });
+
+        await fetchClonedRepos(userData['userId']);
+      } else {
+        setState(() {
+          message = 'Failed to get user ID: ${response.body}';
+          isLoadingRepos = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        message = 'Error retrieving user ID: $e';
+        isLoadingRepos = false;
+      });
+    }
+  }
+
+  Future<void> fetchClonedRepos(String userId) async {
+    try {
+      final cloneResponse = await ApiService.getCloneRepo(widget.token, userId);
+      if (cloneResponse.statusCode == 200) {
+        final responseData = jsonDecode(cloneResponse.body);
+        setState(() {
+          clonedRepos = List<String>.from(responseData['clonedRepos']);
+          isLoadingRepos = false;
+        });
+      } else {
+        setState(() {
+          message = 'Failed to fetch cloned repos.';
+          isLoadingRepos = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        message = 'Error fetching cloned repos: $e';
+        isLoadingRepos = false;
+      });
+    }
   }
 
   Future<void> _initializeVideo() async {
@@ -452,44 +505,7 @@ class _HomePageState extends State<HomePage> {
     } catch (e) {
       setState(() {
         message = 'Error cloning repository: $e';
-      });
-      _setWhaleState(WhaleState.idle);
-    }
-  }
-
-  void fetchClonedRepos() async {
-    setState(() {
-      isLoadingRepos = true;
-    });
-
-    try {
-      final response = await ApiService.getUserId(widget.token);
-      if (response.statusCode == 200) {
-        final userData = jsonDecode(response.body);
-        final userId = userData['userId'];
-
-        final cloneResponse = await ApiService.getCloneRepo(
-          widget.token,
-          userId,
-        );
-
-        if (cloneResponse.statusCode == 200) {
-          final responseData = jsonDecode(cloneResponse.body);
-          setState(() {
-            clonedRepos = List<String>.from(responseData['clonedRepos']);
-            isLoadingRepos = false;
-          });
-        } else {
-          setState(() {
-            message = 'Failed to fetch cloned repos.';
-            isLoadingRepos = false;
-          });
-        }
-      }
-    } catch (e) {
-      setState(() {
-        message = 'Error fetching cloned repos: $e';
-        isLoadingRepos = false;
+        _setWhaleState(WhaleState.idle);
       });
     }
   }
@@ -518,7 +534,7 @@ class _HomePageState extends State<HomePage> {
       backgroundColor: Colors.white,
       appBar: AppBar(
         title: const Text(
-          'clone git repository',
+          'Clone Git Repository',
           style: TextStyle(color: Colors.black),
         ),
         backgroundColor: Colors.white,
@@ -539,9 +555,20 @@ class _HomePageState extends State<HomePage> {
             icon: const Text('👥', style: TextStyle(fontSize: 24)),
             tooltip: 'Community',
             onPressed: () {
+              if (userId == null) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Loading user info. Please wait...'),
+                  ),
+                );
+                return;
+              }
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const CommunityPage()),
+                MaterialPageRoute(
+                  builder: (context) =>
+                      CommunityPage(token: widget.token, userId: userId!),
+                ),
               );
             },
           ),
@@ -581,7 +608,7 @@ class _HomePageState extends State<HomePage> {
                         ),
                       ),
                       child: const Text(
-                        'clone repository',
+                        'Clone Repository',
                         style: TextStyle(fontSize: 16),
                       ),
                     ),
@@ -599,7 +626,7 @@ class _HomePageState extends State<HomePage> {
                   const Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
-                      'cloned repositories',
+                      'Cloned Repositories',
                       style: TextStyle(fontSize: 18),
                     ),
                   ),
@@ -610,7 +637,7 @@ class _HomePageState extends State<HomePage> {
                         ? const Center(child: CircularProgressIndicator())
                         : clonedRepos.isEmpty
                         ? const Center(
-                            child: Text('no repositories cloned yet.'),
+                            child: Text('No repositories cloned yet.'),
                           )
                         : ListView.builder(
                             itemCount: clonedRepos.length,

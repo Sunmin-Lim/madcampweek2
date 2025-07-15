@@ -351,6 +351,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'api_service.dart';
 import 'search_page.dart';
+import 'community_page.dart';
+import 'warning_page.dart';
 
 class SessionPage extends StatefulWidget {
   final String token;
@@ -367,9 +369,9 @@ enum WhaleState { idle, building, running, stopping, deleting }
 class _SessionPageState extends State<SessionPage> {
   String message = '';
   bool isLoading = true;
-  late String userId;
-  late String username;
-  late String localPath;
+  String? userId;
+  String username = '';
+  String localPath = '';
 
   String basePath =
       '/Users/imsnmn/madcampweek2-backend/F:/workspace/server_manage/home';
@@ -414,18 +416,13 @@ class _SessionPageState extends State<SessionPage> {
     whaleMoveTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (!mounted) return;
       setState(() {
-        if (whalePosition >= 0.9) {
-          whalePosition = -0.9;
-        } else {
-          whalePosition += 0.45;
-        }
+        whalePosition = whalePosition >= 0.9 ? -0.9 : whalePosition + 0.45;
       });
     });
   }
 
   Widget whaleAndBox() {
     String boxEmoji = boxOpen ? '📤' : '📦';
-
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -449,17 +446,15 @@ class _SessionPageState extends State<SessionPage> {
       child: Container(
         height: 200,
         width: double.infinity,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.lightBlue.shade200, Colors.blue.shade800],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
         child: Stack(
           children: [
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Colors.lightBlue.shade200, Colors.blue.shade800],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                ),
-              ),
-            ),
             AnimatedOpacity(
               opacity: showBeach ? 1.0 : 0.0,
               duration: const Duration(milliseconds: 500),
@@ -478,9 +473,9 @@ class _SessionPageState extends State<SessionPage> {
                   opacity: confettiOpacity,
                   child: Transform.scale(
                     scale: confettiScale,
-                    child: Text(
+                    child: const Text(
                       '🎉🎊🎉🎊',
-                      style: const TextStyle(fontSize: 32),
+                      style: TextStyle(fontSize: 32),
                     ),
                   ),
                 ),
@@ -542,6 +537,39 @@ class _SessionPageState extends State<SessionPage> {
         backgroundColor: Colors.white,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black),
+        actions: [
+          IconButton(
+            icon: const Text('‼️', style: TextStyle(fontSize: 24)),
+            tooltip: 'Warnings',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const WarningPage()),
+              );
+            },
+          ),
+          IconButton(
+            icon: const Text('👥', style: TextStyle(fontSize: 24)),
+            tooltip: 'Community',
+            onPressed: () {
+              if (userId == null) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Loading user info. Please wait...'),
+                  ),
+                );
+                return;
+              }
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) =>
+                      CommunityPage(token: widget.token, userId: userId!),
+                ),
+              );
+            },
+          ),
+        ],
       ),
       backgroundColor: Colors.white,
       body: isLoading
