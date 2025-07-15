@@ -850,8 +850,14 @@ import 'api_service.dart';
 class SessionPage extends StatefulWidget {
   final String token;
   final String repoUrl;
+  final String imageName;
 
-  const SessionPage({super.key, required this.token, required this.repoUrl});
+  const SessionPage({
+    super.key,
+    required this.token,
+    required this.repoUrl,
+    required this.imageName,
+  });
 
   @override
   _SessionPageState createState() => _SessionPageState();
@@ -869,7 +875,7 @@ class _SessionPageState extends State<SessionPage> {
 
   String basePath =
       '/home/hanjeongjin/Workspace_ubuntu/backend/madcampweek2-backend/F:/workspace/server_manage/home';
-  late String imageName;
+  // late String imageName;
 
   final cpuController = TextEditingController(text: '0.5');
   double cpuSliderValue = 0.5;
@@ -892,10 +898,21 @@ class _SessionPageState extends State<SessionPage> {
 
   Timer? whaleMoveTimer;
 
+  // void updateImageName(String newImageName) {
+  //   setState(() {
+  //     imageName = newImageName; // 새로운 imageName으로 업데이트
+  //     print("Updated imageName: $imageName"); // 변경된 imageName 확인
+  //   });
+  // }
+
   @override
   void initState() {
     super.initState();
     getUserInfo();
+    repo_url = widget.repoUrl; // 전달된 repoUrl로 초기화
+    // updateImageName(
+    //   '${widget.token}-${widget.repoUrl.split('/').last.replaceAll('.git', '')}',
+    // ); // imageName 설정
     startWhaleAnimation();
   }
 
@@ -927,7 +944,11 @@ class _SessionPageState extends State<SessionPage> {
           localPath =
               '$basePath/$username/${widget.repoUrl.split('/').last.replaceAll('.git', '')}';
           repo_url = widget.repoUrl;
-          imageName = '${username}-${DateTime.now().millisecondsSinceEpoch}';
+          // String repoName = widget.repoUrl
+          //     .split('/')
+          //     .last
+          //     .replaceAll('.git', ''); // repoName 추출
+          // imageName = '${username}-${repoName}';
           isLoading = false;
         });
       } else {
@@ -943,6 +964,219 @@ class _SessionPageState extends State<SessionPage> {
         isLoading = false;
       });
     }
+  }
+
+  Future<void> runDockerContainer() async {
+    if (isLoading) return;
+    setWhaleState(WhaleState.running);
+    setState(() {
+      message = '컨테이너 실행 중...';
+      whalePosition = 0;
+      hasBox = true;
+      boxOpen = false;
+      confettiVisible = false;
+      boxSize = 24;
+    });
+
+    await Future.delayed(const Duration(seconds: 1));
+
+    try {
+      final sessionResponse = await ApiService.getSession(widget.token, userId);
+      if (sessionResponse.statusCode == 200) {
+        final sessionData = jsonDecode(sessionResponse.body);
+
+        // repo_url에 맞는 세션을 찾기
+        final session = sessionData.firstWhere(
+          (session) =>
+              session['image_name'] == widget.imageName, // repo_url을 기준으로 세션 찾기
+          orElse: () => null,
+        );
+
+        if (session != null) {
+          final sessionId = session['_id'];
+          final containerId = session['container_id'];
+
+          final response = await ApiService.dockerRun(
+            widget.token,
+            sessionId,
+            cpuController.text,
+            memoryController.text,
+            portController.text,
+          );
+
+          if (!mounted) return;
+          if (response.statusCode == 200) {
+            final responseData = jsonDecode(response.body);
+            String mappedPort = responseData['port'];
+            String fullUrl = 'http://143.248.183.37:$mappedPort';
+
+            setState(() {
+              boxOpen = true;
+              confettiVisible = true;
+              confettiScale = 1.0;
+              confettiOpacity = 1.0;
+              confettiOffsetY = 0.0;
+              boxSize = 60;
+              message = 'Docker 실행 성공! $fullUrl';
+            });
+          } else {
+            setState(() {
+              message = 'Docker 실행 실패: ${response.body}';
+            });
+          }
+        } else {
+          setState(() {
+            message = 'repo_url에 맞는 세션을 찾을 수 없습니다.';
+          });
+        }
+      } else {
+        setState(() {
+          message = '세션 조회 실패: ${sessionResponse.body}';
+        });
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        message = '컨테이너 실행 중 오류 발생: $e';
+      });
+    }
+  }
+
+  void stopContainer() async {
+    if (isLoading) return;
+    setWhaleState(WhaleState.stopping);
+    setState(() {
+      message = 'Stop 진행 중...';
+      whalePosition = 0;
+    });
+
+    try {
+      final sessionResponse = await ApiService.getSession(widget.token, userId);
+      if (sessionResponse.statusCode == 200) {
+        final sessionData = jsonDecode(sessionResponse.body);
+
+        // repo_url에 맞는 세션을 찾기
+        final session = sessionData.firstWhere(
+          (session) =>
+              session['image_name'] == widget.imageName, // repo_url을 기준으로 세션 찾기
+          orElse: () => null,
+        );
+
+        if (session != null) {
+          final sessionId = session['_id'];
+          final containerId = session['container_id'];
+
+          final stopResponse = await ApiService.stopContainer(
+            widget.token,
+            containerId,
+            sessionId,
+          );
+
+          if (!mounted) return;
+          if (stopResponse.statusCode == 200) {
+            setState(() {
+              confettiVisible = false;
+              boxOpen = false;
+              hasBox = true;
+              boxSize = 24;
+              message = '컨테이너 중지 성공!';
+              whaleState = WhaleState.idle;
+            });
+          } else {
+            setState(() {
+              message = '중지 실패: ${stopResponse.body}';
+            });
+          }
+        } else {
+          setState(() {
+            message = 'repo_url에 맞는 세션을 찾을 수 없습니다.';
+          });
+        }
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        message = '중지 중 오류 발생: $e';
+      });
+    }
+  }
+
+  void removeDockerContainer() async {
+    if (isLoading) return;
+    setWhaleState(WhaleState.deleting);
+    setState(() {
+      message = '컨테이너 삭제 중...';
+      whalePosition = 0;
+      showBeach = true;
+      boxOpen = false;
+      confettiVisible = false;
+    });
+
+    await Future.delayed(const Duration(milliseconds: 500));
+    setState(() {
+      whalePosition = -1;
+    });
+
+    await Future.delayed(const Duration(seconds: 1));
+
+    try {
+      final sessionResponse = await ApiService.getSession(widget.token, userId);
+      if (sessionResponse.statusCode == 200) {
+        final sessionData = jsonDecode(sessionResponse.body);
+
+        // repo_url에 맞는 세션을 찾기
+        final session = sessionData.firstWhere(
+          (session) =>
+              session['image_name'] ==
+              widget.imageName, // image name을 기준으로 세션 찾기
+          orElse: () => null,
+        );
+
+        if (session != null) {
+          final containerId = session['container_id'];
+          final sessionId = session['_id'];
+
+          final response = await ApiService.removeContainer(
+            widget.token,
+            containerId,
+            sessionId,
+          );
+
+          if (!mounted) return;
+          if (response.statusCode == 200) {
+            setState(() {
+              hasBox = false;
+              whalePosition = 0;
+              message = '삭제 완료!';
+            });
+          } else {
+            setState(() {
+              message = '삭제 실패: ${response.body}';
+            });
+          }
+        } else {
+          setState(() {
+            message = 'image name에 맞는 세션을 찾을 수 없습니다.';
+          });
+        }
+      } else {
+        setState(() {
+          message = '세션 조회 실패: ${sessionResponse.body}';
+        });
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        message = '삭제 중 오류 발생: $e';
+      });
+    }
+
+    await Future.delayed(const Duration(seconds: 1));
+    setState(() {
+      showBeach = false;
+    });
+
+    setWhaleState(WhaleState.idle);
   }
 
   Future<void> buildDockerContainer() async {
@@ -970,7 +1204,7 @@ class _SessionPageState extends State<SessionPage> {
         widget.token,
         userId,
         localPath,
-        imageName,
+        widget.imageName,
         repo_url,
       );
 
@@ -1005,174 +1239,174 @@ class _SessionPageState extends State<SessionPage> {
     setWhaleState(WhaleState.idle);
   }
 
-  Future<void> runDockerContainer() async {
-    if (isLoading) return;
-    setWhaleState(WhaleState.running);
-    setState(() {
-      message = '컨테이너 실행 중...';
-      whalePosition = 0;
-      hasBox = true;
-      boxOpen = false;
-      confettiVisible = false;
-      boxSize = 24;
-    });
+  // Future<void> runDockerContainer() async {
+  //   if (isLoading) return;
+  //   setWhaleState(WhaleState.running);
+  //   setState(() {
+  //     message = '컨테이너 실행 중...';
+  //     whalePosition = 0;
+  //     hasBox = true;
+  //     boxOpen = false;
+  //     confettiVisible = false;
+  //     boxSize = 24;
+  //   });
 
-    await Future.delayed(const Duration(seconds: 1));
+  //   await Future.delayed(const Duration(seconds: 1));
 
-    try {
-      final sessionResponse = await ApiService.getSession(widget.token, userId);
-      if (sessionResponse.statusCode == 200) {
-        final sessionData = jsonDecode(sessionResponse.body);
-        final sessionId = sessionData[0]['_id'];
+  //   try {
+  //     final sessionResponse = await ApiService.getSession(widget.token, userId);
+  //     if (sessionResponse.statusCode == 200) {
+  //       final sessionData = jsonDecode(sessionResponse.body);
+  //       final sessionId = sessionData[0]['_id'];
 
-        final response = await ApiService.dockerRun(
-          widget.token,
-          sessionId,
-          cpuController.text,
-          memoryController.text,
-          portController.text,
-        );
+  //       final response = await ApiService.dockerRun(
+  //         widget.token,
+  //         sessionId,
+  //         cpuController.text,
+  //         memoryController.text,
+  //         portController.text,
+  //       );
 
-        if (!mounted) return;
-        if (response.statusCode == 200) {
-          final responseData = jsonDecode(response.body);
-          String mappedPort = responseData['port'];
-          String fullUrl = 'http://143.248.183.37:$mappedPort';
+  //       if (!mounted) return;
+  //       if (response.statusCode == 200) {
+  //         final responseData = jsonDecode(response.body);
+  //         String mappedPort = responseData['port'];
+  //         String fullUrl = 'http://143.248.183.37:$mappedPort';
 
-          setState(() {
-            boxOpen = true;
-            confettiVisible = true;
-            confettiScale = 1.0;
-            confettiOpacity = 1.0;
-            confettiOffsetY = 0.0;
-            boxSize = 60;
-            message = 'Docker 실행 성공! $fullUrl';
-          });
-        } else {
-          setState(() {
-            message = 'Docker 실행 실패: ${response.body}';
-          });
-        }
-      } else {
-        setState(() {
-          message = '세션 조회 실패: ${sessionResponse.body}';
-        });
-      }
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        message = '컨테이너 실행 중 오류 발생: $e';
-      });
-    }
-  }
+  //         setState(() {
+  //           boxOpen = true;
+  //           confettiVisible = true;
+  //           confettiScale = 1.0;
+  //           confettiOpacity = 1.0;
+  //           confettiOffsetY = 0.0;
+  //           boxSize = 60;
+  //           message = 'Docker 실행 성공! $fullUrl';
+  //         });
+  //       } else {
+  //         setState(() {
+  //           message = 'Docker 실행 실패: ${response.body}';
+  //         });
+  //       }
+  //     } else {
+  //       setState(() {
+  //         message = '세션 조회 실패: ${sessionResponse.body}';
+  //       });
+  //     }
+  //   } catch (e) {
+  //     if (!mounted) return;
+  //     setState(() {
+  //       message = '컨테이너 실행 중 오류 발생: $e';
+  //     });
+  //   }
+  // }
 
-  void stopContainer() async {
-    if (isLoading) return;
-    setWhaleState(WhaleState.stopping);
-    setState(() {
-      message = 'Stop 진행 중...';
-      whalePosition = 0;
-    });
+  // void stopContainer() async {
+  //   if (isLoading) return;
+  //   setWhaleState(WhaleState.stopping);
+  //   setState(() {
+  //     message = 'Stop 진행 중...';
+  //     whalePosition = 0;
+  //   });
 
-    try {
-      final sessionResponse = await ApiService.getSession(widget.token, userId);
-      if (sessionResponse.statusCode == 200) {
-        final sessionData = jsonDecode(sessionResponse.body);
-        final sessionId = sessionData[0]['_id'];
-        final containerId = sessionData[0]['container_id'];
+  //   try {
+  //     final sessionResponse = await ApiService.getSession(widget.token, userId);
+  //     if (sessionResponse.statusCode == 200) {
+  //       final sessionData = jsonDecode(sessionResponse.body);
+  //       final sessionId = sessionData[0]['_id'];
+  //       final containerId = sessionData[0]['container_id'];
 
-        final stopResponse = await ApiService.stopContainer(
-          widget.token,
-          containerId,
-          sessionId,
-        );
+  //       final stopResponse = await ApiService.stopContainer(
+  //         widget.token,
+  //         containerId,
+  //         sessionId,
+  //       );
 
-        if (!mounted) return;
-        if (stopResponse.statusCode == 200) {
-          setState(() {
-            confettiVisible = false;
-            boxOpen = false;
-            hasBox = true;
-            boxSize = 24;
-            message = '컨테이너 중지 성공!';
-            whaleState = WhaleState.idle;
-          });
-        } else {
-          setState(() {
-            message = '중지 실패: ${stopResponse.body}';
-          });
-        }
-      }
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        message = '중지 중 오류 발생: $e';
-      });
-    }
-  }
+  //       if (!mounted) return;
+  //       if (stopResponse.statusCode == 200) {
+  //         setState(() {
+  //           confettiVisible = false;
+  //           boxOpen = false;
+  //           hasBox = true;
+  //           boxSize = 24;
+  //           message = '컨테이너 중지 성공!';
+  //           whaleState = WhaleState.idle;
+  //         });
+  //       } else {
+  //         setState(() {
+  //           message = '중지 실패: ${stopResponse.body}';
+  //         });
+  //       }
+  //     }
+  //   } catch (e) {
+  //     if (!mounted) return;
+  //     setState(() {
+  //       message = '중지 중 오류 발생: $e';
+  //     });
+  //   }
+  // }
 
-  void removeDockerContainer() async {
-    if (isLoading) return;
-    setWhaleState(WhaleState.deleting);
-    setState(() {
-      message = '컨테이너 삭제 중...';
-      whalePosition = 0;
-      showBeach = true;
-      boxOpen = false;
-      confettiVisible = false;
-    });
+  // void removeDockerContainer() async {
+  //   if (isLoading) return;
+  //   setWhaleState(WhaleState.deleting);
+  //   setState(() {
+  //     message = '컨테이너 삭제 중...';
+  //     whalePosition = 0;
+  //     showBeach = true;
+  //     boxOpen = false;
+  //     confettiVisible = false;
+  //   });
 
-    await Future.delayed(const Duration(milliseconds: 500));
-    setState(() {
-      whalePosition = -1;
-    });
+  //   await Future.delayed(const Duration(milliseconds: 500));
+  //   setState(() {
+  //     whalePosition = -1;
+  //   });
 
-    await Future.delayed(const Duration(seconds: 1));
+  //   await Future.delayed(const Duration(seconds: 1));
 
-    try {
-      final sessionResponse = await ApiService.getSession(widget.token, userId);
-      if (sessionResponse.statusCode == 200) {
-        final sessionData = jsonDecode(sessionResponse.body);
-        final containerId = sessionData[0]['container_id'];
-        final sessionId = sessionData[0]['_id'];
+  //   try {
+  //     final sessionResponse = await ApiService.getSession(widget.token, userId);
+  //     if (sessionResponse.statusCode == 200) {
+  //       final sessionData = jsonDecode(sessionResponse.body);
+  //       final containerId = sessionData[0]['container_id'];
+  //       final sessionId = sessionData[0]['_id'];
 
-        final response = await ApiService.removeContainer(
-          widget.token,
-          containerId,
-          sessionId,
-        );
+  //       final response = await ApiService.removeContainer(
+  //         widget.token,
+  //         containerId,
+  //         sessionId,
+  //       );
 
-        if (!mounted) return;
-        if (response.statusCode == 200) {
-          setState(() {
-            hasBox = false;
-            whalePosition = 0;
-            message = '삭제 완료!';
-          });
-        } else {
-          setState(() {
-            message = '삭제 실패: ${response.body}';
-          });
-        }
-      } else {
-        setState(() {
-          message = '세션 조회 실패: ${sessionResponse.body}';
-        });
-      }
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        message = '삭제 중 오류 발생: $e';
-      });
-    }
+  //       if (!mounted) return;
+  //       if (response.statusCode == 200) {
+  //         setState(() {
+  //           hasBox = false;
+  //           whalePosition = 0;
+  //           message = '삭제 완료!';
+  //         });
+  //       } else {
+  //         setState(() {
+  //           message = '삭제 실패: ${response.body}';
+  //         });
+  //       }
+  //     } else {
+  //       setState(() {
+  //         message = '세션 조회 실패: ${sessionResponse.body}';
+  //       });
+  //     }
+  //   } catch (e) {
+  //     if (!mounted) return;
+  //     setState(() {
+  //       message = '삭제 중 오류 발생: $e';
+  //     });
+  //   }
 
-    await Future.delayed(const Duration(seconds: 1));
-    setState(() {
-      showBeach = false;
-    });
+  //   await Future.delayed(const Duration(seconds: 1));
+  //   setState(() {
+  //     showBeach = false;
+  //   });
 
-    setWhaleState(WhaleState.idle);
-  }
+  //   setWhaleState(WhaleState.idle);
+  // }
 
   void setWhaleState(WhaleState newState) {
     setState(() {

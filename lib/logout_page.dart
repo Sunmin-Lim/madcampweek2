@@ -52,6 +52,7 @@ class _LogoutPageState extends State<LogoutPage> {
   //   }
   // }
 
+  // 연결 해제하기
   void logout() async {
     final response = await ApiService.logout(widget.token);
 

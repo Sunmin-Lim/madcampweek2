@@ -3,10 +3,13 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:madcampweek2/home_page.dart';
+import 'package:madcampweek2/socket_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io';
 
 import 'package:url_launcher/url_launcher.dart';
+import 'package:madcampweek2/socket_provider.dart';
+import 'package:provider/provider.dart';
 
 class ApiService {
   // static const String serverIp = 'http://143.248.184.42:3000';
@@ -333,7 +336,7 @@ class ApiService {
   //   }
   // }
 
-  Future<void> sendCodeToBackend(String code, BuildContext context) async {
+  Future<void> sendCodeToBackend(String code, BuildContext context, String username) async {
     try {
       final response = await http.post(
         // Uri.parse('https://YOUR_BACKEND_URL/api/auth/github/code'), // 🔁 실제 주소로
@@ -351,10 +354,21 @@ class ApiService {
         final token = data['token'];
         print('✅ JWT 토큰 수신: $token');
 
+        // SocketService socketService = SocketService();
+
+        String userId = data['id']; // Retrieve userId here
+        final socketProvider = Provider.of<SocketProvider>(
+          context,
+          listen: false,
+        );
+        socketProvider.initialize(userId);
+
         // 👉 로그인 성공 처리
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => HomePage(token: token)),
+          MaterialPageRoute(
+            builder: (context) => HomePage(token: token, username: username,),
+          ),
         );
       } else {
         print('❌ 서버 인증 실패: ${response.body}');
