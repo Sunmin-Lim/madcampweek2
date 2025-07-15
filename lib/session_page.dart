@@ -1002,6 +1002,7 @@ class _SessionPageState extends State<SessionPage> {
             cpuController.text,
             memoryController.text,
             portController.text,
+            repo_url,
           );
 
           if (!mounted) return;

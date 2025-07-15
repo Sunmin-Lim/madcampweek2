@@ -224,6 +224,7 @@ class ApiService {
     String cpu,
     String memory,
     String port,
+    String repo_url,
   ) async {
     final url = Uri.parse('$domainBase/run'); // 실제 API URL
 
@@ -237,6 +238,7 @@ class ApiService {
       'cpu': cpu,
       'memory': memory,
       'port': port,
+      'repo_url': repo_url,
     });
 
     try {
