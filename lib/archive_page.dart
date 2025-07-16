@@ -216,26 +216,38 @@ import 'package:url_launcher/url_launcher.dart'; // url_launcher 패키지 임�
 class ArchivePage extends StatefulWidget {
   final String token;
   final String repoUrl;
+  final String username;
 
-  const ArchivePage({super.key, required this.token, required this.repoUrl});
+  const ArchivePage({
+    super.key,
+    required this.token,
+    required this.repoUrl,
+    required this.username,
+  });
 
   @override
   _ArchivePageState createState() => _ArchivePageState();
 }
 
 class _ArchivePageState extends State<ArchivePage> {
-  final TextEditingController _userNameController = TextEditingController();
+  // final TextEditingController _userNameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
   // SSH 계정 생성하기
   void _createSSHAccount(BuildContext context) async {
-    final userName = _userNameController.text;
+    // final userName = _userNameController.text;
     final password = _passwordController.text;
     final repoUrl = widget.repoUrl; // repoUrl은 이전 페이지에서 전달된 값
 
-    if (userName.isNotEmpty && password.isNotEmpty && repoUrl.isNotEmpty) {
+    if (widget.username.isNotEmpty &&
+        password.isNotEmpty &&
+        repoUrl.isNotEmpty) {
       try {
-        final response = await ApiService.addUser(userName, password, repoUrl);
+        final response = await ApiService.addUser(
+          widget.username,
+          password,
+          repoUrl,
+        );
         if (response.statusCode == 200) {
           ScaffoldMessenger.of(
             context,
@@ -269,14 +281,17 @@ class _ArchivePageState extends State<ArchivePage> {
 
   // Load Cloned Repo
   void _loadClonedRepo(BuildContext context) async {
-    final userName = _userNameController.text;
+    // final userName = _userNameController.text;
     final userRepoUrl = widget.repoUrl;
 
     print("userRepoUrl: $userRepoUrl");
 
-    if (userName.isNotEmpty && userRepoUrl.isNotEmpty) {
+    if (widget.username.isNotEmpty && userRepoUrl.isNotEmpty) {
       try {
-        final response = await ApiService.loadClonedRepo(userName, userRepoUrl);
+        final response = await ApiService.loadClonedRepo(
+          widget.username,
+          userRepoUrl,
+        );
         if (response.statusCode == 200) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Cloned Repo loaded successfully')),
@@ -327,10 +342,9 @@ class _ArchivePageState extends State<ArchivePage> {
                     ),
                     const SizedBox(height: 8),
                     // 사용자 이름과 비밀번호를 입력하는 필드
-                    TextField(
-                      controller: _userNameController,
-                      decoration: const InputDecoration(labelText: '사용자 이름'),
-                    ),
+                    Text(
+                      'username: ${widget.username}',
+                    ), // 이전 페이지에서 받은 repoUrl을 표시
                     TextField(
                       controller: _passwordController,
                       obscureText: true,
@@ -385,11 +399,11 @@ class _ArchivePageState extends State<ArchivePage> {
 
   // Archive Now 버튼 클릭 시 호출되는 메서드
   void _pushToArchive(BuildContext context) async {
-    final userName = _userNameController.text;
+    // final userName = _userNameController.text;
 
-    if (userName.isNotEmpty) {
+    if (widget.username.isNotEmpty) {
       try {
-        final response = await ApiService.pushToArchive(userName);
+        final response = await ApiService.pushToArchive(widget.username);
         if (response.statusCode == 200) {
           ScaffoldMessenger.of(
             context,

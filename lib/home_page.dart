@@ -768,6 +768,8 @@ import 'community_page.dart';
 import 'archive_page.dart';
 import 'logout_page.dart';
 import 'package:provider/provider.dart';
+import 'warning_message_float.dart'; // 경고 메시지 위젯 임포트
+import 'socket_provider.dart'; // SocketProvider 임포트
 
 class HomePage extends StatefulWidget {
   final String token;
@@ -968,282 +970,596 @@ class _HomePageState extends State<HomePage> {
       child: Scaffold(
         backgroundColor: Colors.white,
         body: SafeArea(
-          child: Center(
-            child: SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24.0,
-                  vertical: 16.0,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    // Top Bar with Back, Title, and Emojis
-                    Row(
+          child: Consumer<SocketProvider>(
+            builder: (context, socketProvider, child) {
+              // 첫 번째 경고 메시지를 가져옵니다.
+              final firstWarning = socketProvider.warnings.isNotEmpty
+                  ? socketProvider.warnings.first
+                  : null;
+
+              return Center(
+                child: SingleChildScrollView(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24.0,
+                      vertical: 16.0,
+                    ),
+                    child: Stack(
                       children: [
-                        IconButton(
-                          icon: const Icon(
-                            Icons.arrow_back,
-                            color: Colors.black,
-                          ),
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => LogoutPage(token: widget.token),
+                        // 실제 페이지 UI
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            // Top Bar with Back, Title, and Emojis
+                            Row(
+                              children: [
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.arrow_back,
+                                    color: Colors.black,
+                                  ),
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) =>
+                                            LogoutPage(token: widget.token),
+                                      ),
+                                    );
+                                  },
+                                ),
+                                const SizedBox(width: 8),
+                                const Text(
+                                  'Clone Git Repository',
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.black,
+                                  ),
+                                ),
+                                const Spacer(),
+                                IconButton(
+                                  icon: const Text(
+                                    '⚠️',
+                                    style: TextStyle(fontSize: 24),
+                                  ),
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => WarningPage(),
+                                      ),
+                                    );
+                                  },
+                                ),
+                                IconButton(
+                                  icon: const Text(
+                                    '👥',
+                                    style: TextStyle(fontSize: 24),
+                                  ),
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            const CommunityPage(),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 24),
+
+                            // Whale Video
+                            whaleVideoWidget(),
+
+                            const SizedBox(height: 24),
+
+                            // Input for repo URL
+                            TextField(
+                              controller: repoUrlController,
+                              decoration: const InputDecoration(
+                                labelText: 'https://github.com/...',
+                                border: OutlineInputBorder(),
                               ),
-                            );
-                          },
-                        ),
-                        const SizedBox(width: 8),
-                        const Text(
-                          'Clone Git Repository',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.black,
-                          ),
-                        ),
-                        const Spacer(),
-                        IconButton(
-                          icon: const Text(
-                            '⚠️',
-                            style: TextStyle(fontSize: 24),
-                          ),
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => WarningPage(),
+                            ),
+
+                            const SizedBox(height: 16),
+
+                            // Clone Button
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton(
+                                onPressed: cloneRepo,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.lightBlue,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 16,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                                child: const Text(
+                                  'Clone Repository',
+                                  style: TextStyle(fontSize: 16),
+                                ),
                               ),
-                            );
-                          },
-                        ),
-                        IconButton(
-                          icon: const Text(
-                            '👥',
-                            style: TextStyle(fontSize: 24),
-                          ),
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const CommunityPage(),
+                            ),
+
+                            const SizedBox(height: 16),
+
+                            // Error / Success Message
+                            if (message.isNotEmpty)
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 8.0,
+                                ),
+                                child: Text(
+                                  message,
+                                  style: const TextStyle(
+                                    color: Colors.red,
+                                    fontSize: 14,
+                                  ),
+                                ),
                               ),
-                            );
-                          },
+
+                            const SizedBox(height: 24),
+
+                            // Cloned Repos Title
+                            const Align(
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                'Cloned Repositories',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.normal,
+                                ),
+                              ),
+                            ),
+
+                            const SizedBox(height: 12),
+
+                            // List of Cloned Repos
+                            SizedBox(
+                              height: 300,
+                              child: isLoadingRepos
+                                  ? const Center(
+                                      child: CircularProgressIndicator(),
+                                    )
+                                  : clonedRepos.isEmpty
+                                  ? const Center(
+                                      child: Text(
+                                        'No repositories cloned yet.',
+                                      ),
+                                    )
+                                  : ListView.builder(
+                                      itemCount: clonedRepos.length,
+                                      itemBuilder: (context, index) {
+                                        final url = clonedRepos[index];
+                                        return Card(
+                                          margin: const EdgeInsets.symmetric(
+                                            vertical: 6,
+                                            horizontal: 4,
+                                          ),
+                                          child: ListTile(
+                                            title: Text(url),
+                                            trailing: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                IconButton(
+                                                  icon: const Text(
+                                                    '📦',
+                                                    style: TextStyle(
+                                                      fontSize: 24,
+                                                    ),
+                                                  ),
+                                                  onPressed: () {
+                                                    String repoName = url
+                                                        .split('/')
+                                                        .last
+                                                        .replaceAll(
+                                                          '.git',
+                                                          '',
+                                                        ); // URL에서 레포 이름 추출
+                                                    String imageName =
+                                                        '${widget.username}-${repoName}'
+                                                            .toLowerCase(); // 소문자 변환
+
+                                                    print(
+                                                      'Generated imageName: $imageName',
+                                                    );
+
+                                                    Navigator.push(
+                                                      context,
+                                                      MaterialPageRoute(
+                                                        builder: (context) =>
+                                                            SessionPage(
+                                                              token:
+                                                                  widget.token,
+                                                              repoUrl:
+                                                                  url, // 전달되는 repoUrl
+                                                              imageName:
+                                                                  imageName, // 생성된 이미지 이름 전달
+                                                            ),
+                                                      ),
+                                                    ).then((_) {
+                                                      setState(() {
+                                                        fetchClonedRepos(); // 페이지를 돌아왔을 때 URL을 갱신
+                                                      });
+                                                    });
+                                                  },
+                                                ),
+                                                const SizedBox(width: 8),
+                                                IconButton(
+                                                  icon: const Text(
+                                                    '📨',
+                                                    style: TextStyle(
+                                                      fontSize: 24,
+                                                    ),
+                                                  ),
+                                                  onPressed: () {
+                                                    Navigator.push(
+                                                      context,
+                                                      MaterialPageRoute(
+                                                        builder: (context) =>
+                                                            ArchivePage(
+                                                              token:
+                                                                  widget.token,
+                                                              repoUrl:
+                                                                  url, // 전달되는 repoUrl
+                                                              username: widget
+                                                                  .username.toLowerCase(),
+                                                            ),
+                                                      ),
+                                                    ).then((_) {
+                                                      setState(() {
+                                                        fetchClonedRepos();
+                                                      });
+                                                    });
+                                                  },
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                            ),
+
+                            const SizedBox(height: 24),
+
+                            // Refresh Button
+                            ElevatedButton(
+                              onPressed: refreshRepos,
+                              child: const Text('Refresh Cloned Repos'),
+                            ),
+
+                            const SizedBox(height: 24),
+
+                            Text(
+                              'BackOverFlow 2025',
+                              style: TextStyle(
+                                color: Colors.grey.shade500,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
                         ),
+                        // 첫 번째 경고 메시지가 있으면 Stack 형태로 표시
+                        if (firstWarning != null)
+                          Positioned(
+                            top: 50,
+                            left: 0,
+                            right: 0,
+                            child: WarningMessageWidget(
+                              repoUrl: firstWarning['repo_url'],
+                              remainingTime: firstWarning['remaining_time_ms'],
+                            ),
+                          ),
                       ],
                     ),
-
-                    const SizedBox(height: 24),
-
-                    // Whale Video
-                    whaleVideoWidget(),
-
-                    const SizedBox(height: 24),
-
-                    // Input for repo URL
-                    TextField(
-                      controller: repoUrlController,
-                      decoration: const InputDecoration(
-                        labelText: 'https://github.com/...',
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    // Clone Button
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: cloneRepo,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.lightBlue,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: const Text(
-                          'Clone Repository',
-                          style: TextStyle(fontSize: 16),
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    // Error / Success Message
-                    if (message.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 8.0),
-                        child: Text(
-                          message,
-                          style: const TextStyle(
-                            color: Colors.red,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ),
-
-                    const SizedBox(height: 24),
-
-                    // Cloned Repos Title
-                    const Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        'Cloned Repositories',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.normal,
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 12),
-
-                    // List of Cloned Repos
-                    SizedBox(
-                      height: 300,
-                      child: isLoadingRepos
-                          ? const Center(child: CircularProgressIndicator())
-                          : clonedRepos.isEmpty
-                          ? const Center(
-                              child: Text('No repositories cloned yet.'),
-                            )
-                          : ListView.builder(
-                              itemCount: clonedRepos.length,
-                              itemBuilder: (context, index) {
-                                final url = clonedRepos[index];
-                                return Card(
-                                  margin: const EdgeInsets.symmetric(
-                                    vertical: 6,
-                                    horizontal: 4,
-                                  ),
-                                  child: ListTile(
-                                    title: Text(url),
-                                    trailing: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        IconButton(
-                                          icon: const Text(
-                                            '📦',
-                                            style: TextStyle(fontSize: 24),
-                                          ),
-                                          onPressed: () {
-                                            // Navigator.push(
-                                            //   context,
-                                            //   MaterialPageRoute(
-                                            //     builder: (context) => SessionPage(
-                                            //       token: widget.token,
-                                            //       repoUrl: url, // 전달되는 repoUrl
-                                            //       imageName:
-                                            //           '${widget.username}-${url.split('/').last.replaceAll('.git', '')}', // 이미지 이름 생성
-                                            //     ),
-                                            //   ),
-                                            // ).then((_) {
-                                            //   setState(() {
-                                            //     // 페이지를 돌아왔을 때 URL을 갱신하거나 업데이트할 작업을 수행
-
-                                            //     fetchClonedRepos();
-                                            //   });
-                                            // });
-                                            // 고유한 이미지 이름 생성 (username과 repoUrl을 조합)
-                                            String repoName = url
-                                                .split('/')
-                                                .last
-                                                .replaceAll(
-                                                  '.git',
-                                                  '',
-                                                ); // URL에서 레포 이름 추출
-                                            String imageName =
-                                                '${widget.username}-${repoName}'
-                                                    .toLowerCase(); // 소문자 변환
-
-                                            // 로그로 imageName 확인
-                                            print(
-                                              'Generated imageName: $imageName',
-                                            );
-
-                                            // Navigator.push로 이동
-                                            Navigator.push(
-                                              context,
-                                              MaterialPageRoute(
-                                                builder: (context) => SessionPage(
-                                                  token: widget.token,
-                                                  repoUrl: url, // 전달되는 repoUrl
-                                                  imageName:
-                                                      imageName, // 생성된 이미지 이름 전달
-                                                ),
-                                              ),
-                                            ).then((_) {
-                                              // 페이지가 돌아온 후 URL을 갱신하거나 업데이트할 작업을 수행
-                                              setState(() {
-                                                fetchClonedRepos(); // 페이지를 돌아왔을 때 URL을 갱신
-                                              });
-                                            });
-                                          },
-                                        ),
-                                        const SizedBox(width: 8),
-                                        IconButton(
-                                          icon: const Text(
-                                            '📨',
-                                            style: TextStyle(fontSize: 24),
-                                          ),
-                                          onPressed: () {
-                                            Navigator.push(
-                                              context,
-                                              MaterialPageRoute(
-                                                builder: (context) =>
-                                                    ArchivePage(
-                                                      token: widget.token,
-                                                      repoUrl:
-                                                          url, // 전달되는 repoUrl,
-                                                    ),
-                                              ),
-                                            ).then((_) {
-                                              setState(() {
-                                                // 페이지를 돌아왔을 때 URL을 갱신하거나 업데이트할 작업을 수행
-                                                fetchClonedRepos();
-                                              });
-                                            });
-                                          },
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    // Refresh Button
-                    ElevatedButton(
-                      onPressed: refreshRepos,
-                      child: const Text('Refresh Cloned Repos'),
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    Text(
-                      'BackOverFlow 2025',
-                      style: TextStyle(
-                        color: Colors.grey.shade500,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
-              ),
-            ),
+              );
+            },
           ),
         ),
       ),
     );
   }
+
+  // @override
+  // Widget build(BuildContext context) {
+  //   return WillPopScope(
+  //     onWillPop: () async {
+  //       Navigator.push(
+  //         context,
+  //         MaterialPageRoute(builder: (_) => LogoutPage(token: widget.token)),
+  //       );
+  //       return false; // 기본 back 동작 막음
+  //     },
+  //     child: Scaffold(
+  //       backgroundColor: Colors.white,
+  //       body: SafeArea(
+  //         child: Center(
+  //           child: SingleChildScrollView(
+  //             child: Padding(
+  //               padding: const EdgeInsets.symmetric(
+  //                 horizontal: 24.0,
+  //                 vertical: 16.0,
+  //               ),
+  //               child: Column(
+  //                 crossAxisAlignment: CrossAxisAlignment.center,
+  //                 children: [
+  //                   // Top Bar with Back, Title, and Emojis
+  //                   Row(
+  //                     children: [
+  //                       IconButton(
+  //                         icon: const Icon(
+  //                           Icons.arrow_back,
+  //                           color: Colors.black,
+  //                         ),
+  //                         onPressed: () {
+  //                           Navigator.push(
+  //                             context,
+  //                             MaterialPageRoute(
+  //                               builder: (_) => LogoutPage(token: widget.token),
+  //                             ),
+  //                           );
+  //                         },
+  //                       ),
+  //                       const SizedBox(width: 8),
+  //                       const Text(
+  //                         'Clone Git Repository',
+  //                         style: TextStyle(
+  //                           fontSize: 20,
+  //                           fontWeight: FontWeight.w600,
+  //                           color: Colors.black,
+  //                         ),
+  //                       ),
+  //                       const Spacer(),
+  //                       IconButton(
+  //                         icon: const Text(
+  //                           '⚠️',
+  //                           style: TextStyle(fontSize: 24),
+  //                         ),
+  //                         onPressed: () {
+  //                           Navigator.push(
+  //                             context,
+  //                             MaterialPageRoute(
+  //                               builder: (context) => WarningPage(),
+  //                             ),
+  //                           );
+  //                         },
+  //                       ),
+  //                       IconButton(
+  //                         icon: const Text(
+  //                           '👥',
+  //                           style: TextStyle(fontSize: 24),
+  //                         ),
+  //                         onPressed: () {
+  //                           Navigator.push(
+  //                             context,
+  //                             MaterialPageRoute(
+  //                               builder: (context) => const CommunityPage(),
+  //                             ),
+  //                           );
+  //                         },
+  //                       ),
+  //                     ],
+  //                   ),
+
+  //                   const SizedBox(height: 24),
+
+  //                   // Whale Video
+  //                   whaleVideoWidget(),
+
+  //                   const SizedBox(height: 24),
+
+  //                   // Input for repo URL
+  //                   TextField(
+  //                     controller: repoUrlController,
+  //                     decoration: const InputDecoration(
+  //                       labelText: 'https://github.com/...',
+  //                       border: OutlineInputBorder(),
+  //                     ),
+  //                   ),
+
+  //                   const SizedBox(height: 16),
+
+  //                   // Clone Button
+  //                   SizedBox(
+  //                     width: double.infinity,
+  //                     child: ElevatedButton(
+  //                       onPressed: cloneRepo,
+  //                       style: ElevatedButton.styleFrom(
+  //                         backgroundColor: Colors.lightBlue,
+  //                         foregroundColor: Colors.white,
+  //                         padding: const EdgeInsets.symmetric(vertical: 16),
+  //                         shape: RoundedRectangleBorder(
+  //                           borderRadius: BorderRadius.circular(12),
+  //                         ),
+  //                       ),
+  //                       child: const Text(
+  //                         'Clone Repository',
+  //                         style: TextStyle(fontSize: 16),
+  //                       ),
+  //                     ),
+  //                   ),
+
+  //                   const SizedBox(height: 16),
+
+  //                   // Error / Success Message
+  //                   if (message.isNotEmpty)
+  //                     Padding(
+  //                       padding: const EdgeInsets.symmetric(vertical: 8.0),
+  //                       child: Text(
+  //                         message,
+  //                         style: const TextStyle(
+  //                           color: Colors.red,
+  //                           fontSize: 14,
+  //                         ),
+  //                       ),
+  //                     ),
+
+  //                   const SizedBox(height: 24),
+
+  //                   // Cloned Repos Title
+  //                   const Align(
+  //                     alignment: Alignment.centerLeft,
+  //                     child: Text(
+  //                       'Cloned Repositories',
+  //                       style: TextStyle(
+  //                         fontSize: 18,
+  //                         fontWeight: FontWeight.normal,
+  //                       ),
+  //                     ),
+  //                   ),
+
+  //                   const SizedBox(height: 12),
+
+  //                   // List of Cloned Repos
+  //                   SizedBox(
+  //                     height: 300,
+  //                     child: isLoadingRepos
+  //                         ? const Center(child: CircularProgressIndicator())
+  //                         : clonedRepos.isEmpty
+  //                         ? const Center(
+  //                             child: Text('No repositories cloned yet.'),
+  //                           )
+  //                         : ListView.builder(
+  //                             itemCount: clonedRepos.length,
+  //                             itemBuilder: (context, index) {
+  //                               final url = clonedRepos[index];
+  //                               return Card(
+  //                                 margin: const EdgeInsets.symmetric(
+  //                                   vertical: 6,
+  //                                   horizontal: 4,
+  //                                 ),
+  //                                 child: ListTile(
+  //                                   title: Text(url),
+  //                                   trailing: Row(
+  //                                     mainAxisSize: MainAxisSize.min,
+  //                                     children: [
+  //                                       IconButton(
+  //                                         icon: const Text(
+  //                                           '📦',
+  //                                           style: TextStyle(fontSize: 24),
+  //                                         ),
+  //                                         onPressed: () {
+  //                                           // Navigator.push(
+  //                                           //   context,
+  //                                           //   MaterialPageRoute(
+  //                                           //     builder: (context) => SessionPage(
+  //                                           //       token: widget.token,
+  //                                           //       repoUrl: url, // 전달되는 repoUrl
+  //                                           //       imageName:
+  //                                           //           '${widget.username}-${url.split('/').last.replaceAll('.git', '')}', // 이미지 이름 생성
+  //                                           //     ),
+  //                                           //   ),
+  //                                           // ).then((_) {
+  //                                           //   setState(() {
+  //                                           //     // 페이지를 돌아왔을 때 URL을 갱신하거나 업데이트할 작업을 수행
+
+  //                                           //     fetchClonedRepos();
+  //                                           //   });
+  //                                           // });
+  //                                           // 고유한 이미지 이름 생성 (username과 repoUrl을 조합)
+  //                                           String repoName = url
+  //                                               .split('/')
+  //                                               .last
+  //                                               .replaceAll(
+  //                                                 '.git',
+  //                                                 '',
+  //                                               ); // URL에서 레포 이름 추출
+  //                                           String imageName =
+  //                                               '${widget.username}-${repoName}'
+  //                                                   .toLowerCase(); // 소문자 변환
+
+  //                                           // 로그로 imageName 확인
+  //                                           print(
+  //                                             'Generated imageName: $imageName',
+  //                                           );
+
+  //                                           // Navigator.push로 이동
+  //                                           Navigator.push(
+  //                                             context,
+  //                                             MaterialPageRoute(
+  //                                               builder: (context) => SessionPage(
+  //                                                 token: widget.token,
+  //                                                 repoUrl: url, // 전달되는 repoUrl
+  //                                                 imageName:
+  //                                                     imageName, // 생성된 이미지 이름 전달
+  //                                               ),
+  //                                             ),
+  //                                           ).then((_) {
+  //                                             // 페이지가 돌아온 후 URL을 갱신하거나 업데이트할 작업을 수행
+  //                                             setState(() {
+  //                                               fetchClonedRepos(); // 페이지를 돌아왔을 때 URL을 갱신
+  //                                             });
+  //                                           });
+  //                                         },
+  //                                       ),
+  //                                       const SizedBox(width: 8),
+  //                                       IconButton(
+  //                                         icon: const Text(
+  //                                           '📨',
+  //                                           style: TextStyle(fontSize: 24),
+  //                                         ),
+  //                                         onPressed: () {
+  //                                           Navigator.push(
+  //                                             context,
+  //                                             MaterialPageRoute(
+  //                                               builder: (context) =>
+  //                                                   ArchivePage(
+  //                                                     token: widget.token,
+  //                                                     repoUrl:
+  //                                                         url, // 전달되는 repoUrl,
+  //                                                   ),
+  //                                             ),
+  //                                           ).then((_) {
+  //                                             setState(() {
+  //                                               // 페이지를 돌아왔을 때 URL을 갱신하거나 업데이트할 작업을 수행
+  //                                               fetchClonedRepos();
+  //                                             });
+  //                                           });
+  //                                         },
+  //                                       ),
+  //                                     ],
+  //                                   ),
+  //                                 ),
+  //                               );
+  //                             },
+  //                           ),
+  //                   ),
+
+  //                   const SizedBox(height: 24),
+
+  //                   // Refresh Button
+  //                   ElevatedButton(
+  //                     onPressed: refreshRepos,
+  //                     child: const Text('Refresh Cloned Repos'),
+  //                   ),
+
+  //                   const SizedBox(height: 24),
+
+  //                   Text(
+  //                     'BackOverFlow 2025',
+  //                     style: TextStyle(
+  //                       color: Colors.grey.shade500,
+  //                       fontSize: 12,
+  //                     ),
+  //                   ),
+  //                 ],
+  //               ),
+  //             ),
+  //           ),
+  //         ),
+  //       ),
+  //     ),
+  //   );
+  // }
 }
