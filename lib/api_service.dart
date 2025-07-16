@@ -337,11 +337,7 @@ class ApiService {
   //   }
   // }
 
-  Future<void> sendCodeToBackend(
-    String code,
-    BuildContext context,
-    String username,
-  ) async {
+  Future<void> sendCodeToBackend(String code, BuildContext context) async {
     try {
       final response = await http.post(
         // Uri.parse('https://YOUR_BACKEND_URL/api/auth/github/code'), // 🔁 실제 주소로
@@ -353,6 +349,7 @@ class ApiService {
       );
 
       print('🔁 서버 응답: ${response}');
+      print('🔁 서버 코드: ${response.statusCode}');
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -360,21 +357,35 @@ class ApiService {
         print('✅ JWT 토큰 수신: $token');
 
         // SocketService socketService = SocketService();
+        // Get user info from the token
+        final response2 = await ApiService.getUserId(
+          token,
+        ); // Make sure getUserId is awaited
+        final data2 = jsonDecode(response2.body);
+        print('✅ data2: $data2');
+        if (data2['userId'] != null && data2['username'] != null) {
+          String userId = data2['userId']; // Retrieve userId here
+          String username = data2['username'];
 
-        String userId = data['id']; // Retrieve userId here
-        final socketProvider = Provider.of<SocketProvider>(
-          context,
-          listen: false,
-        );
-        socketProvider.initialize(userId);
+          print("userId: $userId, username: $username");
 
-        // 👉 로그인 성공 처리
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => HomePage(token: token, username: username),
-          ),
-        );
+          // Initialize socket connection
+          final socketProvider = Provider.of<SocketProvider>(
+            context,
+            listen: false,
+          );
+          socketProvider.initialize(userId);
+
+          // 👉 로그인 성공 처리
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => HomePage(token: token, username: username),
+            ),
+          );
+        } else {
+          print('❌ User data is missing: id or username is null');
+        }
       } else {
         print('❌ 서버 인증 실패: ${response.body}');
       }
@@ -482,7 +493,7 @@ class ApiService {
     final body = jsonEncode({
       'user_name': userName,
       'user_password': password,
-      'user_repo_url': repoUrl,
+      // 'user_repo_url': repoUrl,
     });
 
     return await http.post(
@@ -496,6 +507,24 @@ class ApiService {
   static Future<http.Response> pushToArchive(String userName) async {
     final url = Uri.parse('$sudoArchiveBase/push');
     final body = jsonEncode({'user_name': userName});
+
+    return await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: body,
+    );
+  }
+
+  // Add loadClonedRepo API (POST /api/sudo_archive/load-cloned_repo)
+  static Future<http.Response> loadClonedRepo(
+    String userName,
+    String userRepoUrl,
+  ) async {
+    final url = Uri.parse('$sudoArchiveBase/load-cloned_repo');
+    final body = jsonEncode({
+      'user_name': userName,
+      'user_repo_url': userRepoUrl,
+    });
 
     return await http.post(
       url,

@@ -438,7 +438,9 @@ class _LoginPageState extends State<LoginPage> {
 
           if (code != null && code.isNotEmpty) {
             final apiService = ApiService();
-            apiService.sendCodeToBackend(code, context, username);
+
+            // code를 받아오면 token을 받아야 하는데...
+            apiService.sendCodeToBackend(code, context);
           }
         }
       },
@@ -520,6 +522,9 @@ class _LoginPageState extends State<LoginPage> {
     } catch (e) {
       print('❌ GitHub login failed: $e');
     }
+
+    // GitHub 로그인 완료 후, 딥링크를 통해 수신한 'code'로 백엔드 서버에서 사용자 정보를 가져옵니다.
+    // _handleIncomingLinks();
   }
 
   @override

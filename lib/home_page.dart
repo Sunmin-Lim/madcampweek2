@@ -1160,7 +1160,8 @@ class _HomePageState extends State<HomePage> {
                                                   '',
                                                 ); // URL에서 레포 이름 추출
                                             String imageName =
-                                                '${widget.username}-${repoName}'; // username + repoName 결합
+                                                '${widget.username}-${repoName}'
+                                                    .toLowerCase(); // 소문자 변환
 
                                             // 로그로 imageName 확인
                                             print(
